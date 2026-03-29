@@ -1,0 +1,306 @@
+{
+  "timestamp": "2026-03-29 16:17:01",
+  "pass": 59,
+  "fail": 0,
+  "warn": 0,
+  "total": 59,
+  "elapsed_sec": 0.29,
+  "status": "PASS",
+  "results": [
+    {
+      "test": "A1: All classes importable",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A2: Controller has all 7 agents",
+      "status": "PASS",
+      "detail": "expected={'scoring', 'intent', 'search', 'verification', 'claim', 'qa', 'extraction'}, got={'scoring', 'intent', 'verification', 'claim', 'extraction', 'search', 'qa'}"
+    },
+    {
+      "test": "A3: intent inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A3: extraction inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A3: claim inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A3: search inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A3: verification inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A3: scoring inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A3: qa inherits BaseAgent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A4: intent has name=intent",
+      "status": "PASS",
+      "detail": "name=intent, emoji=🎭"
+    },
+    {
+      "test": "A4: extraction has name=extraction",
+      "status": "PASS",
+      "detail": "name=extraction, emoji=📦"
+    },
+    {
+      "test": "A4: claim has name=claim",
+      "status": "PASS",
+      "detail": "name=claim, emoji=📜"
+    },
+    {
+      "test": "A4: search has name=search",
+      "status": "PASS",
+      "detail": "name=search, emoji=🔎"
+    },
+    {
+      "test": "A4: verification has name=verification",
+      "status": "PASS",
+      "detail": "name=verification, emoji=✅"
+    },
+    {
+      "test": "A4: scoring has name=scoring",
+      "status": "PASS",
+      "detail": "name=scoring, emoji=📊"
+    },
+    {
+      "test": "A4: qa has name=qa",
+      "status": "PASS",
+      "detail": "name=qa, emoji=🧪"
+    },
+    {
+      "test": "A5: Singleton Controller",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A6: analyze_video method exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A6: analyze_image method exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A6: analyze_text method exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A7: analyze_video_multi_agent exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A7: analyze_image_multi_agent exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A7: analyze_text_multi_agent exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B1: Fast classify detects satire keywords",
+      "status": "PASS",
+      "detail": "got=satire"
+    },
+    {
+      "test": "B2: Fast classify → unknown for normal text",
+      "status": "PASS",
+      "detail": "got=unknown"
+    },
+    {
+      "test": "B3: Decision (both satire) → satire",
+      "status": "PASS",
+      "detail": "class=satire, conf=90, is_sat=True"
+    },
+    {
+      "test": "B4: LLM confident satire → satire",
+      "status": "PASS",
+      "detail": "class=satire, conf=85"
+    },
+    {
+      "test": "B5: LLM propaganda → propaganda",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B6: LLM misinformation → misinformation",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B7: LLM factual → factual",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B8: Pre=satire + LLM uncertain → satire",
+      "status": "PASS",
+      "detail": "class=satire, conf=70"
+    },
+    {
+      "test": "C1: Rule 1 — satire + high truth caught",
+      "status": "PASS",
+      "detail": "violations=['RULE_1: Satire has truth=70 > 55']"
+    },
+    {
+      "test": "C2: Rule 2 — satire + high risk caught",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C3: Rule 3 — high truth + 0 verified caught",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C4: Rule 4 — contradicted + high truth caught",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C5: Rule 6 — misinformation + low risk caught",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C6: Clean pass — no violations",
+      "status": "PASS",
+      "detail": "violations=[]"
+    },
+    {
+      "test": "C7: Rule 7 — high confidence + mostly unverified caught",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D1: BBC = high credibility",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D1: Reuters = high credibility",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D2: CNN = medium credibility",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D3: Unknown blog = low credibility",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "E1: Satire response has all keys",
+      "status": "PASS",
+      "detail": "missing=[]"
+    },
+    {
+      "test": "E2: mode = multi_agent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "E3: is_satire_shortcut flag",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "E4: Satire truth ≤ 50",
+      "status": "PASS",
+      "detail": "truth=35"
+    },
+    {
+      "test": "E5: narrative_class = satire",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "E6: QA passed for satire",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "E7: No claims for satire",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "E8: UI data has verdict",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F1: research_step has 'claims'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F2: research_step has 'verified'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F3: research_step has 'contradicted'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F4: research_step has 'unverified'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F5: research_step has 'reliability'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F6: research_step has 'engines_used'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F7: research_step has 'is_linked_to_real_events'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F8: research_step has 'distortion_level'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "F9: unverified = partial + not_verified",
+      "status": "PASS",
+      "detail": ""
+    }
+  ]
+}

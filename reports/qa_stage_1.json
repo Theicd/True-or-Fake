@@ -1,0 +1,172 @@
+{
+  "stage": 1,
+  "timestamp": "2026-03-29 16:16:56",
+  "pass": 27,
+  "fail": 1,
+  "warn": 4,
+  "total": 28,
+  "elapsed_sec": 22.63,
+  "status": "FAIL",
+  "results": [
+    {
+      "test": "A1: All functions importable",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A2: Blossom servers configured",
+      "status": "PASS",
+      "detail": "count=5"
+    },
+    {
+      "test": "A3: Relay URLs configured",
+      "status": "PASS",
+      "detail": "count=5"
+    },
+    {
+      "test": "A4: Network tag set",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A5: Event kinds defined",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "A6: Valid URL: https://files.sovbit.host",
+      "status": "PASS",
+      "detail": "url=https://files.sovbit.host"
+    },
+    {
+      "test": "A6: Valid URL: https://blossom.band",
+      "status": "PASS",
+      "detail": "url=https://blossom.band"
+    },
+    {
+      "test": "A6: Valid URL: https://blossom.primal.net",
+      "status": "PASS",
+      "detail": "url=https://blossom.primal.net"
+    },
+    {
+      "test": "A6: Valid URL: https://blossom.nostr.build",
+      "status": "PASS",
+      "detail": "url=https://blossom.nostr.build"
+    },
+    {
+      "test": "A6: Valid URL: https://nostr.build",
+      "status": "PASS",
+      "detail": "url=https://nostr.build"
+    },
+    {
+      "test": "A7: Valid relay: wss://relay.damus.io",
+      "status": "PASS",
+      "detail": "url=wss://relay.damus.io"
+    },
+    {
+      "test": "A7: Valid relay: wss://relay.snort.social",
+      "status": "PASS",
+      "detail": "url=wss://relay.snort.social"
+    },
+    {
+      "test": "A7: Valid relay: wss://nos.lol",
+      "status": "PASS",
+      "detail": "url=wss://nos.lol"
+    },
+    {
+      "test": "A7: Valid relay: wss://purplerelay.com",
+      "status": "PASS",
+      "detail": "url=wss://purplerelay.com"
+    },
+    {
+      "test": "A7: Valid relay: wss://relay.nostr.band",
+      "status": "PASS",
+      "detail": "url=wss://relay.nostr.band"
+    },
+    {
+      "test": "B1: SHA256 hex works",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B2: MIME jpg",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B2: MIME png",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B2: MIME mp4",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B2: MIME webm",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "B3: Upload returns URL",
+      "status": "FAIL",
+      "detail": "Blossom upload failed. Tried 41 endpoints. Errors: ['PUT https://files.sovbit.host/upload: HTTP 400', 'POST https://files.sovbit.host/upload: HTTP 404', 'PUT https://files.sovbit.host/api/v1/upload: HTTP 404']"
+    },
+    {
+      "test": "B4: Skipped (B3 failed)",
+      "status": "WARN",
+      "detail": "Blossom upload failed. Tried 41 endpoints. Errors: ['PUT https://files.sovbit.host/upload: HTTP 400', 'POST https://files.sovbit.host/upload: HTTP 404', 'PUT https://files.sovbit.host/api/v1/upload: HTTP 404']"
+    },
+    {
+      "test": "C1: _sign_event exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C2: Nostr keys not configured",
+      "status": "WARN",
+      "detail": "Set NOSTR_PRIVATE_KEY and NOSTR_PUBLIC_KEY env vars for full relay tests"
+    },
+    {
+      "test": "C3: websockets package installed",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "C4: WebSocket connection to relay",
+      "status": "PASS",
+      "detail": "relay=wss://relay.damus.io"
+    },
+    {
+      "test": "C5: Fetch events from relay",
+      "status": "PASS",
+      "detail": "got 3 events"
+    },
+    {
+      "test": "C6: Skipped (no keys)",
+      "status": "WARN",
+      "detail": "Set NOSTR_PRIVATE_KEY + NOSTR_PUBLIC_KEY to test relay save"
+    },
+    {
+      "test": "D1: create_group exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D1: fetch_group exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "D2: Skipped (no keys)",
+      "status": "WARN",
+      "detail": ""
+    },
+    {
+      "test": "D3: Fetch group returns list",
+      "status": "PASS",
+      "detail": "got 0 events"
+    }
+  ]
+}
