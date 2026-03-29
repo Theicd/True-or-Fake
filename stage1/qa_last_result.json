@@ -1,0 +1,1829 @@
+{
+  "status": "ok",
+  "meta": {
+    "media_type": "video",
+    "file_size_bytes": 2834447,
+    "file_size_kb": 2768.0,
+    "sha256": "6712e844f1979e9e6971a24bbe572a373e61b1ac687ba2bcd4c85219e5d06bbc",
+    "duration_sec": 99.0,
+    "frames_extracted": 99,
+    "scene_changes": 6,
+    "scene_change_times": [
+      1.32,
+      6.12,
+      41.08,
+      44.72,
+      59.72,
+      82.24
+    ],
+    "selected_frame_times": [
+      0,
+      1.3,
+      3,
+      6,
+      9,
+      12,
+      15,
+      18,
+      21,
+      24,
+      27,
+      30,
+      33,
+      36,
+      39,
+      41.1,
+      44.7,
+      48,
+      51,
+      54,
+      57,
+      59.7,
+      63,
+      66,
+      69,
+      72,
+      75,
+      78,
+      81,
+      82.2,
+      84,
+      87,
+      90,
+      93,
+      96
+    ],
+    "audio_extracted": true,
+    "audio_segments": 7
+  },
+  "pipeline": [
+    {
+      "step": 2,
+      "name": "speech_transcription",
+      "model": "openai/whisper-large-v3-turbo",
+      "segments": [
+        {
+          "index": 0,
+          "input": "Audio segment 0 (569KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 5931,
+          "status": "empty"
+        },
+        {
+          "index": 1,
+          "input": "Audio segment 1 (570KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 1258,
+          "status": "empty"
+        },
+        {
+          "index": 2,
+          "input": "Audio segment 2 (585KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 3098,
+          "status": "empty"
+        },
+        {
+          "index": 3,
+          "input": "Audio segment 3 (578KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 846,
+          "status": "empty"
+        },
+        {
+          "index": 4,
+          "input": "Audio segment 4 (577KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 1837,
+          "status": "empty"
+        },
+        {
+          "index": 5,
+          "input": "Audio segment 5 (595KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 1191,
+          "status": "empty"
+        },
+        {
+          "index": 6,
+          "input": "Audio segment 6 (354KB)",
+          "model": "openai/whisper-large-v3-turbo",
+          "response": {
+            "error": "{\"error\":\"Invalid username or password.\"}"
+          },
+          "result": "",
+          "language": "unknown",
+          "duration_ms": 1168,
+          "status": "empty"
+        }
+      ],
+      "full_text": ""
+    },
+    {
+      "step": 3,
+      "name": "ocr_extraction",
+      "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "prompt_used": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+      "frames": [
+        {
+          "frame_index": 0,
+          "time_sec": 0,
+          "timestamp": "00:00",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21647,
+          "status": "empty"
+        },
+        {
+          "frame_index": 3,
+          "time_sec": 3,
+          "timestamp": "00:03",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21125,
+          "status": "empty"
+        },
+        {
+          "frame_index": 6,
+          "time_sec": 6,
+          "timestamp": "00:06",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20642,
+          "status": "empty"
+        },
+        {
+          "frame_index": 9,
+          "time_sec": 9,
+          "timestamp": "00:09",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20146,
+          "status": "empty"
+        },
+        {
+          "frame_index": 12,
+          "time_sec": 12,
+          "timestamp": "00:12",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18525,
+          "status": "empty"
+        },
+        {
+          "frame_index": 15,
+          "time_sec": 15,
+          "timestamp": "00:15",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17702,
+          "status": "empty"
+        },
+        {
+          "frame_index": 18,
+          "time_sec": 18,
+          "timestamp": "00:18",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17318,
+          "status": "empty"
+        },
+        {
+          "frame_index": 21,
+          "time_sec": 21,
+          "timestamp": "00:21",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20655,
+          "status": "empty"
+        },
+        {
+          "frame_index": 24,
+          "time_sec": 24,
+          "timestamp": "00:24",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16629,
+          "status": "empty"
+        },
+        {
+          "frame_index": 27,
+          "time_sec": 27,
+          "timestamp": "00:27",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 15840,
+          "status": "empty"
+        },
+        {
+          "frame_index": 30,
+          "time_sec": 30,
+          "timestamp": "00:30",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18494,
+          "status": "empty"
+        },
+        {
+          "frame_index": 33,
+          "time_sec": 33,
+          "timestamp": "00:33",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20155,
+          "status": "empty"
+        },
+        {
+          "frame_index": 36,
+          "time_sec": 36,
+          "timestamp": "00:36",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17643,
+          "status": "empty"
+        },
+        {
+          "frame_index": 39,
+          "time_sec": 39,
+          "timestamp": "00:39",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17998,
+          "status": "empty"
+        },
+        {
+          "frame_index": 48,
+          "time_sec": 48,
+          "timestamp": "00:48",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16860,
+          "status": "empty"
+        },
+        {
+          "frame_index": 51,
+          "time_sec": 51,
+          "timestamp": "00:51",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17683,
+          "status": "empty"
+        },
+        {
+          "frame_index": 54,
+          "time_sec": 54,
+          "timestamp": "00:54",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16938,
+          "status": "empty"
+        },
+        {
+          "frame_index": 57,
+          "time_sec": 57,
+          "timestamp": "00:57",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21000,
+          "status": "empty"
+        },
+        {
+          "frame_index": 63,
+          "time_sec": 63,
+          "timestamp": "01:03",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20214,
+          "status": "empty"
+        },
+        {
+          "frame_index": 66,
+          "time_sec": 66,
+          "timestamp": "01:06",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18699,
+          "status": "empty"
+        },
+        {
+          "frame_index": 69,
+          "time_sec": 69,
+          "timestamp": "01:09",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21184,
+          "status": "empty"
+        },
+        {
+          "frame_index": 72,
+          "time_sec": 72,
+          "timestamp": "01:12",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20731,
+          "status": "empty"
+        },
+        {
+          "frame_index": 75,
+          "time_sec": 75,
+          "timestamp": "01:15",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20202,
+          "status": "empty"
+        },
+        {
+          "frame_index": 78,
+          "time_sec": 78,
+          "timestamp": "01:18",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20459,
+          "status": "empty"
+        },
+        {
+          "frame_index": 81,
+          "time_sec": 81,
+          "timestamp": "01:21",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16654,
+          "status": "empty"
+        },
+        {
+          "frame_index": 84,
+          "time_sec": 84,
+          "timestamp": "01:24",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16672,
+          "status": "empty"
+        },
+        {
+          "frame_index": 87,
+          "time_sec": 87,
+          "timestamp": "01:27",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18077,
+          "status": "empty"
+        },
+        {
+          "frame_index": 90,
+          "time_sec": 90,
+          "timestamp": "01:30",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 19470,
+          "status": "empty"
+        },
+        {
+          "frame_index": 93,
+          "time_sec": 93,
+          "timestamp": "01:33",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16599,
+          "status": "empty"
+        },
+        {
+          "frame_index": 96,
+          "time_sec": 96,
+          "timestamp": "01:36",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "OUTPUT ONLY THE RAW TEXT visible in this image. No explanations, no formatting.\nInclude ALL text: banners, tickers, overlays, subtitles, watermarks, logos, signs.\nInclude ALL languages (Hebrew, Arabic, English, etc). Preserve line breaks.\nIf unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\nCRITICAL: Do NOT write any introduction like 'The text is:'. Output ONLY the text.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18829,
+          "status": "empty"
+        }
+      ],
+      "frame_times": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21,
+        24,
+        27,
+        30,
+        33,
+        36,
+        39,
+        48,
+        51,
+        54,
+        57,
+        63,
+        66,
+        69,
+        72,
+        75,
+        78,
+        81,
+        84,
+        87,
+        90,
+        93,
+        96
+      ],
+      "full_text": ""
+    },
+    {
+      "step": 4,
+      "name": "object_detection",
+      "model": "facebook/detr-resnet-50",
+      "frames": [
+        {
+          "frame_index": 0,
+          "time_sec": 0,
+          "timestamp": "00:00",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2243,
+          "status": "ok"
+        },
+        {
+          "frame_index": 6,
+          "time_sec": 6,
+          "timestamp": "00:06",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2145,
+          "status": "ok"
+        },
+        {
+          "frame_index": 12,
+          "time_sec": 12,
+          "timestamp": "00:12",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 1780,
+          "status": "ok"
+        },
+        {
+          "frame_index": 18,
+          "time_sec": 18,
+          "timestamp": "00:18",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 1402,
+          "status": "ok"
+        },
+        {
+          "frame_index": 24,
+          "time_sec": 24,
+          "timestamp": "00:24",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 1037,
+          "status": "ok"
+        },
+        {
+          "frame_index": 30,
+          "time_sec": 30,
+          "timestamp": "00:30",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2624,
+          "status": "ok"
+        },
+        {
+          "frame_index": 36,
+          "time_sec": 36,
+          "timestamp": "00:36",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2477,
+          "status": "ok"
+        },
+        {
+          "frame_index": 44,
+          "time_sec": 44.7,
+          "timestamp": "00:44",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2111,
+          "status": "ok"
+        },
+        {
+          "frame_index": 48,
+          "time_sec": 48,
+          "timestamp": "00:48",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 1715,
+          "status": "ok"
+        },
+        {
+          "frame_index": 54,
+          "time_sec": 54,
+          "timestamp": "00:54",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2511,
+          "status": "ok"
+        },
+        {
+          "frame_index": 66,
+          "time_sec": 66,
+          "timestamp": "01:06",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2509,
+          "status": "ok"
+        },
+        {
+          "frame_index": 72,
+          "time_sec": 72,
+          "timestamp": "01:12",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2886,
+          "status": "ok"
+        },
+        {
+          "frame_index": 78,
+          "time_sec": 78,
+          "timestamp": "01:18",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2157,
+          "status": "ok"
+        },
+        {
+          "frame_index": 82,
+          "time_sec": 82.2,
+          "timestamp": "01:22",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2152,
+          "status": "ok"
+        },
+        {
+          "frame_index": 84,
+          "time_sec": 84,
+          "timestamp": "01:24",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 3200,
+          "status": "ok"
+        },
+        {
+          "frame_index": 90,
+          "time_sec": 90,
+          "timestamp": "01:30",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 1385,
+          "status": "ok"
+        },
+        {
+          "frame_index": 96,
+          "time_sec": 96,
+          "timestamp": "01:36",
+          "model": "facebook/detr-resnet-50",
+          "detections": [
+            {
+              "error": "HTTP 401"
+            }
+          ],
+          "duration_ms": 2192,
+          "status": "ok"
+        }
+      ],
+      "frame_times": [
+        0,
+        6,
+        12,
+        18,
+        24,
+        30,
+        36,
+        44.7,
+        48,
+        54,
+        66,
+        72,
+        78,
+        82.2,
+        84,
+        90,
+        96
+      ],
+      "unique_objects": []
+    },
+    {
+      "step": 5,
+      "name": "image_captioning",
+      "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "prompt_used": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+      "frames": [
+        {
+          "frame_index": 0,
+          "time_sec": 0,
+          "timestamp": "00:00",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 19795,
+          "status": "error"
+        },
+        {
+          "frame_index": 3,
+          "time_sec": 3,
+          "timestamp": "00:03",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 23361,
+          "status": "error"
+        },
+        {
+          "frame_index": 6,
+          "time_sec": 6,
+          "timestamp": "00:06",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18316,
+          "status": "error"
+        },
+        {
+          "frame_index": 9,
+          "time_sec": 9,
+          "timestamp": "00:09",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21883,
+          "status": "error"
+        },
+        {
+          "frame_index": 12,
+          "time_sec": 12,
+          "timestamp": "00:12",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20119,
+          "status": "error"
+        },
+        {
+          "frame_index": 15,
+          "time_sec": 15,
+          "timestamp": "00:15",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17882,
+          "status": "error"
+        },
+        {
+          "frame_index": 18,
+          "time_sec": 18,
+          "timestamp": "00:18",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16539,
+          "status": "error"
+        },
+        {
+          "frame_index": 21,
+          "time_sec": 21,
+          "timestamp": "00:21",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 14658,
+          "status": "error"
+        },
+        {
+          "frame_index": 24,
+          "time_sec": 24,
+          "timestamp": "00:24",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17356,
+          "status": "error"
+        },
+        {
+          "frame_index": 27,
+          "time_sec": 27,
+          "timestamp": "00:27",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 19593,
+          "status": "error"
+        },
+        {
+          "frame_index": 30,
+          "time_sec": 30,
+          "timestamp": "00:30",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18839,
+          "status": "error"
+        },
+        {
+          "frame_index": 33,
+          "time_sec": 33,
+          "timestamp": "00:33",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20104,
+          "status": "error"
+        },
+        {
+          "frame_index": 36,
+          "time_sec": 36,
+          "timestamp": "00:36",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18691,
+          "status": "error"
+        },
+        {
+          "frame_index": 39,
+          "time_sec": 39,
+          "timestamp": "00:39",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16200,
+          "status": "error"
+        },
+        {
+          "frame_index": 48,
+          "time_sec": 48,
+          "timestamp": "00:48",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17305,
+          "status": "error"
+        },
+        {
+          "frame_index": 51,
+          "time_sec": 51,
+          "timestamp": "00:51",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18893,
+          "status": "error"
+        },
+        {
+          "frame_index": 54,
+          "time_sec": 54,
+          "timestamp": "00:54",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16968,
+          "status": "error"
+        },
+        {
+          "frame_index": 57,
+          "time_sec": 57,
+          "timestamp": "00:57",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18854,
+          "status": "error"
+        },
+        {
+          "frame_index": 63,
+          "time_sec": 63,
+          "timestamp": "01:03",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17573,
+          "status": "error"
+        },
+        {
+          "frame_index": 66,
+          "time_sec": 66,
+          "timestamp": "01:06",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 17210,
+          "status": "error"
+        },
+        {
+          "frame_index": 69,
+          "time_sec": 69,
+          "timestamp": "01:09",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 20783,
+          "status": "error"
+        },
+        {
+          "frame_index": 72,
+          "time_sec": 72,
+          "timestamp": "01:12",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21677,
+          "status": "error"
+        },
+        {
+          "frame_index": 75,
+          "time_sec": 75,
+          "timestamp": "01:15",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18975,
+          "status": "error"
+        },
+        {
+          "frame_index": 78,
+          "time_sec": 78,
+          "timestamp": "01:18",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 19443,
+          "status": "error"
+        },
+        {
+          "frame_index": 81,
+          "time_sec": 81,
+          "timestamp": "01:21",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18444,
+          "status": "error"
+        },
+        {
+          "frame_index": 84,
+          "time_sec": 84,
+          "timestamp": "01:24",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 21119,
+          "status": "error"
+        },
+        {
+          "frame_index": 87,
+          "time_sec": 87,
+          "timestamp": "01:27",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 19142,
+          "status": "error"
+        },
+        {
+          "frame_index": 90,
+          "time_sec": 90,
+          "timestamp": "01:30",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18746,
+          "status": "error"
+        },
+        {
+          "frame_index": 93,
+          "time_sec": 93,
+          "timestamp": "01:33",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 18434,
+          "status": "error"
+        },
+        {
+          "frame_index": 96,
+          "time_sec": 96,
+          "timestamp": "01:36",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Describe this image in detail. Include:\n- What is shown (people, objects, scene)\n- Text visible on screen\n- Setting/environment\n- Notable visual elements\nBe factual and specific. Output in the language of the visible text, or English.",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 16914,
+          "status": "error"
+        }
+      ]
+    },
+    {
+      "step": 6,
+      "name": "ai_detection",
+      "models": [
+        "Qwen/Qwen2.5-VL-72B-Instruct",
+        "umm-maybe/AI-image-detector"
+      ],
+      "frames": [
+        {
+          "module": "ai_vision_check",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "frame_index": 0,
+          "prompt": "Analyze this image for signs of AI generation or manipulation.\nCheck: unnatural textures, warped text, extra fingers, inconsistent lighting,\nblurred edges, repetitive patterns, deepfake artifacts.\nReturn JSON: {\"ai_generated\": true/false, \"confidence\": 0.0-1.0, \"signals\": []}",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 22184,
+          "status": "ok"
+        },
+        {
+          "module": "ai_classifier",
+          "model": "umm-maybe/AI-image-detector",
+          "frame_index": 0,
+          "response": {
+            "error": "HTTP 401"
+          },
+          "duration_ms": 1351,
+          "status": "error"
+        },
+        {
+          "module": "ai_vision_check",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "frame_index": 49,
+          "prompt": "Analyze this image for signs of AI generation or manipulation.\nCheck: unnatural textures, warped text, extra fingers, inconsistent lighting,\nblurred edges, repetitive patterns, deepfake artifacts.\nReturn JSON: {\"ai_generated\": true/false, \"confidence\": 0.0-1.0, \"signals\": []}",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 9273,
+          "status": "ok"
+        },
+        {
+          "module": "ai_classifier",
+          "model": "umm-maybe/AI-image-detector",
+          "frame_index": 49,
+          "response": {
+            "error": "HTTP 401"
+          },
+          "duration_ms": 719,
+          "status": "error"
+        }
+      ]
+    },
+    {
+      "step": 7,
+      "name": "text_merge",
+      "speech_text": "",
+      "ocr_text": "",
+      "captions_text": "",
+      "merged_text": ""
+    },
+    {
+      "step": 8,
+      "name": "investigative_questions",
+      "model": "deepseek-ai/DeepSeek-V3",
+      "prompt": "You are analyzing a video. Below is all extracted data.\nGenerate 5-10 investigative questions that will help understand the content better.\nFocus on:\n- Unclear or ambiguous elements\n- Possible contradictions\n- Missing context\n- Visual anomalies\n- Claims that need verification\nReturn JSON array: [\"question1\", \"question2\", ...]",
+      "user_input": "VIDEO DATA:\n\n\nDETECTED OBJECTS: \n\nGenerate 5-10 investigative questions....",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "questions": [
+        "ERROR 401: {\"error\":\"Invalid username or password.\"}"
+      ],
+      "duration_ms": 723
+    },
+    {
+      "step": 9,
+      "name": "frame_reinvestigation",
+      "answers": [
+        {
+          "question": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+          "frame_index": 0,
+          "timestamp": "00:00",
+          "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "prompt": "Look at this image and answer: ERROR 401: {\"error\":\"Invalid username or password.\"}",
+          "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          "duration_ms": 4615
+        }
+      ]
+    },
+    {
+      "step": 11,
+      "name": "summary",
+      "model": "deepseek-ai/DeepSeek-V3",
+      "prompt": "Summarize the content of this video based on all collected data below.\nFocus ONLY on:\n- What is happening\n- Key elements and objects\n- People and their actions\n- Text/speech content\nNO assumptions. NO judgments. Keep it factual and structured.\nWrite in the main language of the content.",
+      "user_input": "MERGED TEXT:\n\n\nOBJECTS: \n\nINVESTIGATION Q&A:\nQ: ERROR 401: {\"error\":\"Invalid username or password.\"}\nA: ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}\n\nWrite a factual summary....",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "summary_text": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "duration_ms": 724
+    },
+    {
+      "step": "narrative_classifier",
+      "name": "narrative_classifier",
+      "model": "openai/gpt-oss-120b",
+      "prompt": "You are a Narrative Intelligence Classifier.\nYour job is to classify the TRUE INTENT of the content.\n\nYou must distinguish between:\n1. REAL MISINFORMATION — false claims presented as truth to deceive\n2. SATIRE / PARODY / HUMOR — intentionally absurd or comedic content\n3. FICTION / ENTERTAINMENT — creative or dramatic content\n4. FACTUAL CONTENT — genuine reporting or information\n5. PROPAGANDA — intentional manipulation to influence beliefs\n\nCRITICAL RULES:\n- Do NOT classify as misinformation if:\n  • The content contains absurd or unrealistic elements (e.g. aliens, supernatural events, impossible scenarios)\n  • The tone is humorous, exaggerated, or ironic\n  • The narrative resembles parody or satire\n- If absurd elements are present → Strongly consider SATIRE or FICTION\n- If the content mimics news but includes unrealistic claims → classify as SATIRE / PARODY\n- Only classify as PROPAGANDA if there is a clear attempt to influence beliefs AND the content appears realistic and deceptive\n- Only classify as MISINFORMATION if the false claims are presented seriously with no humor signals\n\nOUTPUT (STRICT JSON ONLY):\n{\n  \"narrative_class\": \"Satire | Propaganda | Misinformation | Fiction | Factual\",\n  \"confidence\": 0,\n  \"reasoning\": \"Based ONLY on input signals\",\n  \"absurdity_detected\": false,\n  \"humor_signals\": [],\n  \"risk_override\": false\n}",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "parsed": {
+        "error": "Invalid username or password.",
+        "narrative_class": "Factual",
+        "confidence": 50,
+        "absurdity_detected": false,
+        "humor_signals": [],
+        "risk_override": false
+      },
+      "duration_ms": 1227
+    },
+    {
+      "step": "intelligence",
+      "name": "intelligence_analysis",
+      "model": "openai/gpt-oss-120b",
+      "prompt": "You are a high-level intelligence analyst.\n\nYour job:\n- Interpret the content meaning\n- Detect: satire, parody, misinformation, propaganda, factual reporting\n- Identify key signals (contradictions, humor, nonsense, unsourced claims)\n- List factual findings grounded ONLY in the input data\n- Note uncertainties\n\nSTRICT RULES:\n- Do NOT assign scores or percentages\n- Do NOT estimate reliability, risk, confidence, authenticity, or manipulation\n- Do NOT invent facts not supported by input\n- If uncertain → say so explicitly\n- Base conclusions ONLY on provided data\n- Prefer 'insufficient evidence' over guessing\n\nLANGUAGE RULES:\n- Write final_assessment in HEBREW (עברית) — 2-3 sentences\n- Write key_findings in HEBREW (עברית) — short factual sentences\n- Write uncertainties in HEBREW (עברית) — short sentences\n- Write recommended_action in HEBREW (עברית)\n- Write reasoning in English\n- Write key_signals in English\n- Write content_type in English\n\nOUTPUT FORMAT (STRICT JSON ONLY):\n{\n  \"content_type\": \"satire | misinformation | propaganda | factual | fiction | unclear\",\n  \"key_signals\": [\"contradictions\", \"humor\", \"nonsense\", \"unsourced_claims\"],\n  \"key_findings\": [\"ממצא עובדתי בעברית 1\", \"...\"],\n  \"final_assessment\": \"מסקנה קצרה בעברית — 2-3 משפטים\",\n  \"reasoning\": \"step-by-step reasoning in English based ONLY on input\",\n  \"uncertainties\": [\"אי ודאות בעברית 1\", \"...\"],\n  \"recommended_action\": \"המלצה בעברית\"\n}",
+      "user_input": "INPUT DATA:\n{\"meta\": {\"media_type\": \"video\", \"file_size_bytes\": 2834447, \"file_size_kb\": 2768.0, \"sha256\": \"6712e844f1979e9e6971a24bbe572a373e61b1ac687ba2bcd4c85219e5d06bbc\", \"duration_sec\": 99.0, \"frames_extracted\": 99, \"scene_changes\": 6, \"scene_change_times\": [1.32, 6.12, 41.08, 44.72, 59.72, 82.24], \"selected_frame_times\": [0, 1.3, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 41.1, 44.7, 48, 51, 54, 57, 59.7, 63, 66, 69, 72, 75, 78, 81, 82.2, 84, 87, 90, 93, 96], \"audio_extracted\": true, \"audio_segments\": 7}, \"speech_text\": \"\", \"ocr_text\": \"\", \"merged_text\": \"\", \"summary\": \"ERROR 401: ...",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "parsed": {
+        "error": "Invalid username or password."
+      },
+      "duration_ms": 1235
+    },
+    {
+      "step": "intelligent_research",
+      "name": "reality_check_engine",
+      "duration_ms": 3699,
+      "sub_steps": [
+        {
+          "step": "research_claims",
+          "name": "claim_extraction",
+          "model": "openai/gpt-oss-120b",
+          "prompt": "Extract all factual claims from the content analysis.\n\nRules:\n- Only explicit, verifiable claims\n- No interpretation or opinion\n- Short sentences\n- Maximum 8 claims\n- Write claims in HEBREW if content is Hebrew, otherwise English\n\nOUTPUT (STRICT JSON ONLY):\n{\n  \"claims\": [\"טענה 1\", \"טענה 2\"]\n}",
+          "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+          "parsed": {
+            "error": "Invalid username or password.",
+            "claims": []
+          },
+          "duration_ms": 2196
+        },
+        {
+          "step": "research_questions",
+          "name": "investigative_questions",
+          "parsed": {
+            "questions": []
+          },
+          "duration_ms": 0
+        },
+        {
+          "step": "research_search",
+          "name": "multi_source_search",
+          "parsed": {
+            "results": [],
+            "sources_searched": 0,
+            "engines_used": []
+          },
+          "duration_ms": 0
+        },
+        {
+          "step": "research_verification",
+          "name": "verification_model",
+          "parsed": {
+            "results": [],
+            "context_summary": "",
+            "verified": [],
+            "contradicted": [],
+            "partially_verified": [],
+            "not_verified": []
+          },
+          "duration_ms": 0
+        },
+        {
+          "step": "research_context",
+          "name": "context_intelligence",
+          "model": "openai/gpt-oss-120b",
+          "prompt": "You are a strategic intelligence analyst.\n\nINPUT:\n- Verified facts from fact-checking step\n- Original video/image summary\n- Verification results with sources\n\nTASK: Determine:\n1. Is this event part of a larger real-world sequence?\n2. What known real events relate to it?\n3. Is the video/image distorting or referencing real events?\n4. What is the strategic significance?\n\nWrite in HEBREW.\n\nOUTPUT (STRICT JSON ONLY):\n{\n  \"is_linked_to_real_events\": true,\n  \"related_events\": [\"אירוע 1\", \"אירוע 2\"],\n  \"distortion_level\": \"none | low | medium | high\",\n  \"event_type\": \"Geopolitical | Health | Social | Environmental | Military | Economic | Other\",\n  \"context_level\": \"High | Medium | Low\",\n  \"explanation\": \"הסבר מודיעיני מפורט בעברית\",\n  \"final_assessment\": \"הערכה אסטרטגית סופית בעברית\"\n}",
+          "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+          "parsed": {
+            "error": "Invalid username or password.",
+            "is_linked_to_real_events": false,
+            "related_events": [],
+            "distortion_level": "none",
+            "event_type": "Other",
+            "context_level": "Low",
+            "explanation": "",
+            "final_assessment": "",
+            "is_part_of_larger_event": false
+          },
+          "duration_ms": 1501
+        }
+      ],
+      "parsed": {
+        "claims": [],
+        "questions": [],
+        "sources_searched": 0,
+        "engines_used": [],
+        "verification_results": [],
+        "verified": [],
+        "contradicted": [],
+        "partially_verified": [],
+        "not_verified": [],
+        "unverified": [],
+        "context_summary": "",
+        "is_part_of_larger_event": false,
+        "is_linked_to_real_events": false,
+        "related_events": [],
+        "distortion_level": "none",
+        "event_type": "Other",
+        "context_level": "Low",
+        "context_explanation": "",
+        "strategic_assessment": "",
+        "reliability": {
+          "content_reliability": 20.0,
+          "source_reliability": 0,
+          "verification_score": 0,
+          "final_reliability": 20.0,
+          "verified_count": 0,
+          "contradicted_count": 0,
+          "partial_count": 0,
+          "not_verified_count": 0,
+          "total_claims": 1
+        }
+      }
+    },
+    {
+      "step": "validation",
+      "name": "anti_hallucination",
+      "model": "openai/gpt-oss-120b",
+      "prompt": "You are a validation system.\nYour job is to verify that the analysis is strictly grounded in the input.\n\nRULES:\n- Mark any claim that is not supported by input data\n- Reduce confidence if unsupported claims are found\n- Ensure no hallucinated facts exist\n\nLANGUAGE: Write issues in HEBREW (עברית). Keep is_valid and corrected_confidence in English.\n\nOUTPUT (STRICT JSON ONLY):\n{\n  \"is_valid\": true,\n  \"issues\": [\"בעיה בעברית 1\"],\n  \"corrected_confidence\": \"Low | Medium | High\"\n}",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "parsed": {
+        "error": "Invalid username or password."
+      },
+      "duration_ms": 1218
+    },
+    {
+      "step": "evidence_filter",
+      "name": "evidence_filter",
+      "model": "openai/gpt-oss-120b",
+      "prompt": "You are an evidence-based filtering system.\nYour job is to STRICTLY remove or correct any claim that is not directly supported by the input data.\n\nRULES:\n- If a claim is not explicitly supported by the original data → REMOVE IT\n- Do not rephrase unsupported claims — delete them\n- Keep only verifiable statements that are grounded in input\n- List every removed claim so the user can see what was filtered\n- Provide a filtered assessment containing ONLY supported conclusions\n- Provide filtered_findings containing ONLY evidence-backed findings\n\nLANGUAGE RULES:\n- Write filtered_assessment in HEBREW (עברית)\n- Write filtered_findings in HEBREW (עברית) — short sentences\n- Write removed_claims in HEBREW (עברית)\n- Keep evidence_quality value in English\n\nOUTPUT (STRICT JSON ONLY):\n{\n  \"filtered_assessment\": \"מסקנה קצרה בעברית מבוססת ראיות בלבד\",\n  \"filtered_findings\": [\"ממצא מאומת בעברית 1\", \"...\"],\n  \"removed_claims\": [\"טענה שהוסרה בעברית 1\", \"...\"],\n  \"evidence_quality\": \"Strong | Moderate | Weak | Insufficient\"\n}",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "parsed": {
+        "error": "Invalid username or password.",
+        "filtered_assessment": "",
+        "filtered_findings": [],
+        "removed_claims": [],
+        "evidence_quality": "Moderate"
+      },
+      "duration_ms": 1234
+    },
+    {
+      "step": "ui_adapter",
+      "name": "ui_adapter",
+      "model": "openai/gpt-oss-120b",
+      "prompt": "You are a UI text generator.\nYour ONLY job: write a short Hebrew summary of the analysis.\n\nSTRICT RULES:\n- Do NOT produce scores, percentages, or metrics\n- Do NOT produce tags, flags, or labels\n- Do NOT estimate reliability, risk, confidence\n- ONLY produce a ui_summary text in HEBREW\n- 2-3 sentences maximum\n- If content is satire → explain it neutrally, do not alarm\n- Base summary ONLY on the input analysis\n\nOUTPUT (STRICT JSON ONLY):\n{\n  \"ui_summary\": \"סיכום בעברית — 2-3 משפטים\"\n}",
+      "response": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+      "parsed": {
+        "ui_metrics": {
+          "truth_score": 73,
+          "authenticity_score": 100,
+          "ai_probability": 0,
+          "narrative": "Factual",
+          "risk_level": "Low",
+          "confidence_level": 42,
+          "reliability": 73,
+          "manipulation": "Low"
+        },
+        "content_type": "factual",
+        "intent": "informational",
+        "factual_mode": true,
+        "risk_type": "general",
+        "risk_detail": "",
+        "confidence_reasons": [
+          "שלבי ניתוח חסרים",
+          "מקור לא מזוהה"
+        ],
+        "ui_summary": "",
+        "ui_tags": [
+          "factual"
+        ],
+        "ui_flags": [],
+        "verified_findings": [],
+        "removed_claims": [],
+        "evidence_quality": "Moderate",
+        "system_trust": "LOW",
+        "satire_detected": false,
+        "narrative_class": "factual",
+        "risk_level": "low",
+        "signals": {
+          "contradictions": 0,
+          "absurdity": 0,
+          "manipulation": 0,
+          "source_quality": 55
+        },
+        "humor_signals": [],
+        "research": {
+          "claims": [],
+          "verified": [],
+          "contradicted": [],
+          "unverified": [],
+          "context_summary": "",
+          "questions": [],
+          "is_part_of_larger_event": false,
+          "event_type": "Other",
+          "context_level": "Low",
+          "context_explanation": "",
+          "sources_searched": 0
+        },
+        "missing_steps": [
+          "intelligence",
+          "validation"
+        ],
+        "consistency_applied": true
+      },
+      "duration_ms": 1267
+    }
+  ],
+  "output": {
+    "speech_text": "",
+    "ocr_text": "",
+    "merged_text": "",
+    "frames": [
+      {
+        "timestamp": "00:00",
+        "time_sec": 0,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "ai_detection": [
+          "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          {
+            "error": "HTTP 401"
+          }
+        ]
+      },
+      {
+        "timestamp": "00:03",
+        "time_sec": 3,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:06",
+        "time_sec": 6,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:09",
+        "time_sec": 9,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:12",
+        "time_sec": 12,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:15",
+        "time_sec": 15,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:18",
+        "time_sec": 18,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:21",
+        "time_sec": 21,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:24",
+        "time_sec": 24,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:27",
+        "time_sec": 27,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:30",
+        "time_sec": 30,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:33",
+        "time_sec": 33,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:36",
+        "time_sec": 36,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:39",
+        "time_sec": 39,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:44",
+        "time_sec": 44.7,
+        "objects": [
+          null
+        ]
+      },
+      {
+        "timestamp": "00:48",
+        "time_sec": 48,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:49",
+        "time_sec": 49,
+        "ai_detection": [
+          "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+          {
+            "error": "HTTP 401"
+          }
+        ]
+      },
+      {
+        "timestamp": "00:51",
+        "time_sec": 51,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:54",
+        "time_sec": 54,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "00:57",
+        "time_sec": 57,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:03",
+        "time_sec": 63,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:06",
+        "time_sec": 66,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:09",
+        "time_sec": 69,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:12",
+        "time_sec": 72,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:15",
+        "time_sec": 75,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:18",
+        "time_sec": 78,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:21",
+        "time_sec": 81,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:22",
+        "time_sec": 82.2,
+        "objects": [
+          null
+        ]
+      },
+      {
+        "timestamp": "01:24",
+        "time_sec": 84,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:27",
+        "time_sec": 87,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:30",
+        "time_sec": 90,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:33",
+        "time_sec": 93,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      },
+      {
+        "timestamp": "01:36",
+        "time_sec": 96,
+        "ocr": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "objects": [
+          null
+        ],
+        "caption": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}"
+      }
+    ],
+    "questions": [
+      "ERROR 401: {\"error\":\"Invalid username or password.\"}"
+    ],
+    "answers": [
+      {
+        "question": "ERROR 401: {\"error\":\"Invalid username or password.\"}",
+        "frame_index": 0,
+        "timestamp": "00:00",
+        "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+        "prompt": "Look at this image and answer: ERROR 401: {\"error\":\"Invalid username or password.\"}",
+        "response": "ERROR vision_fallback_failed: Qwen/Qwen2.5-VL-72B-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | meta-llama/Llama-4-Scout-17B-16E-Instruct: HTTP 401: {\"error\":\"Invalid username or password.\"} | google/gemma-3-27b-it: HTTP 401: {\"error\":\"Invalid username or password.\"}",
+        "duration_ms": 4615
+      }
+    ],
+    "summary": "ERROR 401: {\"error\":\"Invalid username or password.\"}"
+  },
+  "scores": {
+    "truth_score": 73,
+    "authenticity_score": 100,
+    "ai_probability": 0,
+    "narrative_class": "factual",
+    "risk_level": "low",
+    "confidence_level": 82,
+    "signals": {
+      "contradictions": 0,
+      "absurdity": 0,
+      "manipulation": 0,
+      "source_quality": 55
+    },
+    "is_satire": false,
+    "source_count": 1,
+    "reliability": 73,
+    "manipulation": 0
+  },
+  "consistency": {
+    "ui_metrics": {
+      "truth_score": 73,
+      "authenticity_score": 100,
+      "ai_probability": 0,
+      "narrative": "Factual",
+      "risk_level": "Low",
+      "confidence_level": 42,
+      "reliability": 73,
+      "manipulation": "Low"
+    },
+    "content_type": "factual",
+    "intent": "informational",
+    "factual_mode": true,
+    "risk_type": "general",
+    "risk_detail": "",
+    "confidence_reasons": [
+      "שלבי ניתוח חסרים",
+      "מקור לא מזוהה"
+    ],
+    "ui_summary": "",
+    "ui_tags": [
+      "factual"
+    ],
+    "ui_flags": [],
+    "verified_findings": [],
+    "removed_claims": [],
+    "evidence_quality": "Moderate",
+    "system_trust": "LOW",
+    "satire_detected": false,
+    "narrative_class": "factual",
+    "risk_level": "low",
+    "signals": {
+      "contradictions": 0,
+      "absurdity": 0,
+      "manipulation": 0,
+      "source_quality": 55
+    },
+    "humor_signals": [],
+    "research": {
+      "claims": [],
+      "verified": [],
+      "contradicted": [],
+      "unverified": [],
+      "context_summary": "",
+      "questions": [],
+      "is_part_of_larger_event": false,
+      "event_type": "Other",
+      "context_level": "Low",
+      "context_explanation": "",
+      "sources_searched": 0
+    },
+    "missing_steps": [
+      "intelligence",
+      "validation"
+    ],
+    "consistency_applied": true
+  },
+  "narrative": {
+    "error": "Invalid username or password.",
+    "narrative_class": "Factual",
+    "confidence": 50,
+    "absurdity_detected": false,
+    "humor_signals": [],
+    "risk_override": false
+  },
+  "intelligence": {
+    "error": "Invalid username or password."
+  },
+  "research": {
+    "claims": [],
+    "questions": [],
+    "sources_searched": 0,
+    "engines_used": [],
+    "verification_results": [],
+    "verified": [],
+    "contradicted": [],
+    "partially_verified": [],
+    "not_verified": [],
+    "unverified": [],
+    "context_summary": "",
+    "is_part_of_larger_event": false,
+    "is_linked_to_real_events": false,
+    "related_events": [],
+    "distortion_level": "none",
+    "event_type": "Other",
+    "context_level": "Low",
+    "context_explanation": "",
+    "strategic_assessment": "",
+    "reliability": {
+      "content_reliability": 20.0,
+      "source_reliability": 0,
+      "verification_score": 0,
+      "final_reliability": 20.0,
+      "verified_count": 0,
+      "contradicted_count": 0,
+      "partial_count": 0,
+      "not_verified_count": 0,
+      "total_claims": 1
+    }
+  },
+  "validation": {
+    "error": "Invalid username or password."
+  },
+  "evidence_filter": {
+    "error": "Invalid username or password.",
+    "filtered_assessment": "",
+    "filtered_findings": [],
+    "removed_claims": [],
+    "evidence_quality": "Moderate"
+  },
+  "ui_data": {
+    "ui_metrics": {
+      "truth_score": 73,
+      "authenticity_score": 100,
+      "ai_probability": 0,
+      "narrative": "Factual",
+      "risk_level": "Low",
+      "confidence_level": 42,
+      "reliability": 73,
+      "manipulation": "Low"
+    },
+    "content_type": "factual",
+    "intent": "informational",
+    "factual_mode": true,
+    "risk_type": "general",
+    "risk_detail": "",
+    "confidence_reasons": [
+      "שלבי ניתוח חסרים",
+      "מקור לא מזוהה"
+    ],
+    "ui_summary": "",
+    "ui_tags": [
+      "factual"
+    ],
+    "ui_flags": [],
+    "verified_findings": [],
+    "removed_claims": [],
+    "evidence_quality": "Moderate",
+    "system_trust": "LOW",
+    "satire_detected": false,
+    "narrative_class": "factual",
+    "risk_level": "low",
+    "signals": {
+      "contradictions": 0,
+      "absurdity": 0,
+      "manipulation": 0,
+      "source_quality": 55
+    },
+    "humor_signals": [],
+    "research": {
+      "claims": [],
+      "verified": [],
+      "contradicted": [],
+      "unverified": [],
+      "context_summary": "",
+      "questions": [],
+      "is_part_of_larger_event": false,
+      "event_type": "Other",
+      "context_level": "Low",
+      "context_explanation": "",
+      "sources_searched": 0
+    },
+    "missing_steps": [
+      "intelligence",
+      "validation"
+    ],
+    "consistency_applied": true
+  },
+  "total_duration_ms": 232918
+}
