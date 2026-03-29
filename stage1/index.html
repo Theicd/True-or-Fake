@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>True or Fake — גלה: אמת או שקר?</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;800&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/stage1/styles.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     BACKGROUND EFFECTS — אפקטים עדינים לרקע
+═══════════════════════════════════════════════════ -->
+<div class="grid-overlay"></div>
+<div class="scan-line"></div>
+<div class="brand-cloud" aria-hidden="true">
+    <span class="bc-wordmark" dir="ltr">
+        <span class="bc-true">TRUE</span>
+        <span class="bc-or">OR</span>
+        <span class="bc-fake">FAKE</span>
+    </span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     HEADER — שורה עליונה דקה עם לוגו וכפתורים
+═══════════════════════════════════════════════════ -->
+<header class="header">
+    <div class="header-inner">
+        <!-- לוגו + סלוגן -->
+        <div class="logo" id="logoBtn">
+            <div class="logo-mark split-logo" aria-label="True or Fake emblem"></div>
+            <div class="logo-text">
+                <span class="logo-name"><span class="ln-true">True</span><span class="ln-or">or</span><span class="ln-fake">Fake</span></span>
+                <span class="logo-tag" data-he="גלה: אמת או שקר?" data-en="Detect: Real or Fabricated?">גלה: אמת או שקר?</span>
+            </div>
+        </div>
+        <!-- כפתורי פעולה: שפה + CPanel + התחברות -->
+        <div class="header-actions">
+            <button class="btn-lang" id="langBtn" aria-label="Toggle language">EN</button>
+            <button class="btn-cpanel" onclick="window.open('/cpanel','_blank')" aria-label="Admin CPanel" title="Admin CPanel">⚙️</button>
+            <button class="btn-user" id="btnUser">
+                <span class="user-icon">👤</span>
+                <span class="user-label" data-he="התחבר" data-en="Login">התחבר</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════
+     AUTH MODAL — חלון התחברות / הרשמה (popup)
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="authModal">
+    <div class="modal-box">
+        <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+        <!-- טאבים: התחבר / הרשם -->
+        <div class="modal-tabs">
+            <button class="modal-tab active" data-tab="login" data-he="התחבר" data-en="Login">התחבר</button>
+            <button class="modal-tab" data-tab="register" data-he="הרשם" data-en="Register">הרשם</button>
+        </div>
+        <!-- ═══ TAB: התחברות עם מפתח API ═══ -->
+        <div class="modal-body" id="loginTab">
+            <div class="auth-icon">🔑</div>
+            <p class="auth-desc" data-he="הכנס מפתח HuggingFace API" data-en="Enter your HuggingFace API key">הכנס מפתח HuggingFace API</p>
+            <input type="text" id="token" class="input-field" placeholder="hf_..." autocomplete="off" dir="ltr" spellcheck="false">
+            <button class="btn-primary" id="btnVerify" data-he="אמת והתחבר" data-en="Verify & Connect">אמת והתחבר</button>
+            <div class="auth-status" id="tokenStatus"></div>
+            <p class="auth-hint" data-he="מפתח חינמי מ-huggingface.co/settings/tokens" data-en="Free key from huggingface.co/settings/tokens">מפתח חינמי מ-huggingface.co/settings/tokens</p>
+        </div>
+        <!-- ═══ TAB: הרשמה (בקרוב) ═══ -->
+        <div class="modal-body hidden" id="registerTab">
+            <div class="auth-icon">📬</div>
+            <h3 class="reg-title" data-he="ההרשמה תיפתח בקרוב!" data-en="Registration opening soon!">ההרשמה תיפתח בקרוב!</h3>
+            <p class="auth-desc" data-he="השאר מייל ונודיע לך כשנפתח" data-en="Leave your email and we'll notify you">השאר מייל ונודיע לך כשנפתח</p>
+            <input type="email" id="regEmail" class="input-field" placeholder="your@email.com" dir="ltr">
+            <button class="btn-primary" id="btnRegNotify" data-he="הודיעו לי" data-en="Notify Me">הודיעו לי</button>
+            <div class="auth-status" id="regStatus"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     GUIDED TOUR — סיור מודרך למשתמש חדש
+═══════════════════════════════════════════════════ -->
+<div class="tour-overlay hidden" id="tourOverlay">
+    <div class="tour-box" id="tourBox">
+        <div class="tour-content" id="tourContent"></div>
+        <div class="tour-footer">
+            <span class="tour-step" id="tourStep">1/4</span>
+            <div class="tour-btns">
+                <button class="btn-tour-skip" id="tourSkip" data-he="דלג" data-en="Skip">דלג</button>
+                <button class="btn-tour-next" id="tourNext" data-he="הבא" data-en="Next">הבא</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT — אזור התוכן הראשי
+═══════════════════════════════════════════════════ -->
+<main class="main">
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: HISTORY — מסך ראשי עם ניתוחים קודמים
+    ═══════════════════════════════════════════ -->
+    <section id="screen-history">
+        <!-- בנר הסבר קצר -->
+        <div class="history-intro">
+            <span class="hi-intro-icon">🔍</span>
+            <div>
+                <p class="hi-intro-kicker" data-he="Reality Scanner" data-en="Reality Scanner">Reality Scanner</p>
+                <p class="hi-intro-title" data-he="לא עוד חדשות. מערכת שבודקת את החדשות." data-en="Not more news. A system that checks the news.">לא עוד חדשות. מערכת שבודקת את החדשות.</p>
+                <p class="hi-intro-text" data-he="מעלים וידאו, תמונה או טקסט, והמערכת מחלצת טענות, מחפשת מקורות ברשת ומחזירה דוח אמינות ברור. לחץ על כל שורה כדי לפתוח את הניתוח המלא." data-en="Upload video, image or text, and the system extracts claims, searches the web for sources, and returns a clear credibility report. Tap any row to open the full analysis.">מעלים וידאו, תמונה או טקסט, והמערכת מחלצת טענות, מחפשת מקורות ברשת ומחזירה דוח אמינות ברור. לחץ על כל שורה כדי לפתוח את הניתוח המלא.</p>
+            </div>
+        </div>
+        <!-- כרטיס Hero — הניתוח האחרון, גדול ובולט -->
+        <div class="hero-card hidden" id="heroCard">
+            <div class="hero-topline">
+                <span class="hero-kicker" data-he="INTELLIGENCE FEED" data-en="INTELLIGENCE FEED">INTELLIGENCE FEED</span>
+                <span class="hero-threat" id="heroThreat">LIVE CHECK</span>
+            </div>
+            <div class="hero-badge" id="heroBadge">📺</div>
+            <div class="hero-body">
+                <div class="hero-scores">
+                    <span class="hero-score" id="heroScore">79%</span>
+                    <span class="hero-narrative" id="heroNarrative">עובדתי</span>
+                </div>
+                <h2 class="hero-title" id="heroTitle">שם הקובץ</h2>
+                <div class="hero-meta-row">
+                    <span class="hero-trust-state" id="heroTrustState">Likely Authentic</span>
+                    <p class="hero-date" id="heroDate">24.03.2026</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- כותרת + כפתור ניקוי -->
+        <div class="section-bar">
+            <h3 class="section-title" data-he="ניתוחים אחרונים" data-en="Recent Analyses">ניתוחים אחרונים</h3>
+            <button class="btn-text-danger" id="btnClearHistory" style="display:none" data-he="נקה הכל" data-en="Clear All">נקה הכל</button>
+        </div>
+
+        <!-- רשימת כרטיסי היסטוריה -->
+        <div class="history-grid" id="historyGrid"></div>
+
+        <!-- מצב ריק — אין ניתוחים -->
+        <div class="empty-state" id="historyEmpty">
+            <div class="empty-icon">🔍</div>
+            <h3 data-he="עדיין אין ניתוחים" data-en="No analyses yet">עדיין אין ניתוחים</h3>
+            <p data-he="העלה קובץ מדיה כדי להתחיל לנתח" data-en="Upload a media file to start analyzing">העלה קובץ מדיה כדי להתחיל לנתח</p>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: ANALYZE — מסך העלאה וניתוח חדש
+    ═══════════════════════════════════════════ -->
+    <section id="screen-analyze" class="hidden">
+        <!-- מסך נעילה — נדרשת התחברות -->
+        <div class="auth-wall" id="authWall">
+            <div class="auth-wall-icon">🔒</div>
+            <h3 data-he="נדרשת התחברות" data-en="Login Required">נדרשת התחברות</h3>
+            <p data-he="התחבר עם מפתח API כדי לבצע ניתוח" data-en="Connect with API key to run analysis">התחבר עם מפתח API כדי לבצע ניתוח</p>
+            <button class="btn-primary" id="btnAuthFromWall" data-he="התחבר עכשיו" data-en="Login Now">התחבר עכשיו</button>
+        </div>
+
+        <!-- אזור העלאה — נראה רק אחרי התחברות -->
+        <div class="upload-wrap hidden" id="uploadWrap">
+            <div class="upload-header">
+                <h2 data-he="ניתוח חדש" data-en="New Analysis">ניתוח חדש <span class="info-tip" data-tip="העלה וידאו או תמונה — המערכת תנתח את רמת האמינות והאותנטיות">i</span></h2>
+                <p data-he="העלה וידאו או תמונה לבדיקת אמינות מבוססת AI" data-en="Upload video or image for AI-based credibility check">העלה וידאו או תמונה לבדיקת אמינות מבוססת AI</p>
+            </div>
+
+            <!-- אזור גרירה -->
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-icon">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <p class="drop-text" data-he="גרור קובץ לכאן" data-en="Drag file here">גרור קובץ לכאן</p>
+                <span class="drop-or" data-he="או" data-en="or">או</span>
+                <button class="btn-outline" id="btnUpload" data-he="בחר קובץ" data-en="Choose File">בחר קובץ</button>
+                <input type="file" id="fileInput" accept="video/*,image/*" style="display:none">
+                <div class="file-badge hidden" id="selectedFile"></div>
+            </div>
+
+            <!-- URL חלופי -->
+            <div class="url-section">
+                <span class="url-label" data-he="או הדבק כתובת תמונה" data-en="Or paste image URL">או הדבק כתובת תמונה</span>
+                <input type="text" id="urlInput" class="input-field input-url" dir="ltr" placeholder="https://example.com/image.jpg"
+                       data-he-placeholder="https://example.com/image.jpg" data-en-placeholder="https://example.com/image.jpg">
+            </div>
+
+            <!-- כפתור ניתוח -->
+            <button class="btn-analyze" id="btnGo" data-he="🔍 נתח עכשיו" data-en="🔍 Analyze Now">🔍 נתח עכשיו</button>
+
+            <!-- פורמטים נתמכים -->
+            <div class="formats-row">
+                <span class="fmt">MP4</span><span class="fmt">AVI</span><span class="fmt">MOV</span>
+                <span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">WEBP</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: INFO — מידע על המערכת
+    ═══════════════════════════════════════════ -->
+    <section id="screen-info" class="hidden">
+        <div class="info-hero">
+            <p class="info-kicker" data-he="Watchdog • Intelligence Layer • Reality Scanner" data-en="Watchdog • Intelligence Layer • Reality Scanner">Watchdog • Intelligence Layer • Reality Scanner</p>
+            <div class="info-logo-big split-logo split-logo-lg" aria-label="True or Fake emblem large"></div>
+            <h2 dir="ltr"><span class="ln-true">True</span> <span class="ln-or">or</span> <span class="ln-fake">Fake</span></h2>
+            <p class="info-tagline" data-he="האח הגדול של האמת. שכבת מודיעין שבודקת את מי שמספר לך מה נכון." data-en="The watchdog of truth. An intelligence layer that checks whoever tells you what is real.">האח הגדול של האמת. שכבת מודיעין שבודקת את מי שמספר לך מה נכון.</p>
+        </div>
+        <!-- מה המערכת עושה -->
+        <div class="info-what">
+            <p data-he="True or Fake לא מייצרת עוד תוכן. היא בודקת תוכן קיים: מחלצת טענות, משווה אותן למקורות, מזהה סימני מניפולציה ומציגה החלטה ברורה עם נימוקים." data-en="True or Fake does not create more content. It checks existing content: extracts claims, compares them against sources, detects manipulation signals, and returns a clear decision with reasons.">True or Fake לא מייצרת עוד תוכן. היא בודקת תוכן קיים: מחלצת טענות, משווה אותן למקורות, מזהה סימני מניפולציה ומציגה החלטה ברורה עם נימוקים.</p>
+        </div>
+        <div class="cap-grid">
+            <div class="cap-card">
+                <span class="cap-icon">🎥</span>
+                <h4 data-he="וידאו, תמונה וטקסט" data-en="Video, Image &amp; Text">וידאו, תמונה וטקסט</h4>
+                <p data-he="מעלים כל סוג מדיה והמערכת סורקת אותו לעומק, כולל שמיעה, טקסט ותמונות" data-en="Upload any media and the system scans it thoroughly — audio, text and visuals">מעלים כל סוג מדיה והמערכת סורקת אותו לעומק, כולל שמיעה, טקסט ותמונות</p>
+            </div>
+            <div class="cap-card">
+                <span class="cap-icon">📝</span>
+                <h4 data-he="חילוץ טענות" data-en="Claim Extraction">חילוץ טענות</h4>
+                <p data-he="מזהה אוטומטית את הטענות העיקריות בתוכן לצורך בדיקה ממוקדת" data-en="Automatically pulls the main claims from the content for targeted verification">מזהה אוטומטית את הטענות העיקריות בתוכן לצורך בדיקה ממוקדת</p>
+            </div>
+            <div class="cap-card">
+                <span class="cap-icon">🌐</span>
+                <h4 data-he="חיפוש ברשת" data-en="Web Search">חיפוש ברשת</h4>
+                <p data-he="מחפשת לכל טענה מקורות ברשת ובודקת אם הם מאמתות או סותרות אותה" data-en="Searches the web for each claim to check whether credible sources confirm or contradict it">מחפשת לכל טענה מקורות ברשת ובודקת אם הם מאמתות או סותרות אותה</p>
+            </div>
+            <div class="cap-card">
+                <span class="cap-icon">🤖</span>
+                <h4 data-he="זיהוי דיפייק ו-AI" data-en="Deepfake &amp; AI Detection">זיהוי דיפייק ו-AI</h4>
+                <p data-he="מגלה תוכן מזויף, דיפייק או תמונות שעובדו ע&quot;י בינה מלאכותית" data-en="Detects fabricated content, deepfakes and images manipulated by AI">מגלה תוכן מזויף, דיפייק או תמונות שעובדו ע"י בינה מלאכותית</p>
+            </div>
+            <div class="cap-card">
+                <span class="cap-icon">🎭</span>
+                <h4 data-he="סאטירה ותעמולה" data-en="Satire &amp; Propaganda">סאטירה ותעמולה</h4>
+                <p data-he="מבדיל בין דיווח עובדתי, הומור, סאטירה ותעמולה כדי לא לסרגל ציון שגוי" data-en="Distinguishes factual reporting, humor, satire and propaganda to avoid wrong scoring">מבדיל בין דיווח עובדתי, הומור, סאטירה ותעמולה כדי לא לסרגל ציון שגוי</p>
+            </div>
+            <div class="cap-card">
+                <span class="cap-icon">📊</span>
+                <h4 data-he="דוח אמינות" data-en="Credibility Report">דוח אמינות</h4>
+                <p data-he="ציון אמינות, אותנטיות וסיכון עם הסבר מלא, טענות שאומתו ומקורות שנמצאו" data-en="Credibility, authenticity and risk scores with full explanation, verified claims and sources found">ציון אמינות, אותנטיות וסיכון עם הסבר מלא, טענות שאומתו ומקורות שנמצאו</p>
+            </div>
+        </div>
+        <div class="info-footer">
+            <p data-he="גרסה 2.0 · כל הנתונים נשארים בשרתי המשתמש בלבד" data-en="Version 2.0 · All data stays on the user's own server">גרסה 2.0 · כל הנתונים נשארים בשרתי המשתמש בלבד</p>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: PROCESS — מסך עיבוד ניתוח
+    ═══════════════════════════════════════════ -->
+    <section id="screen-process" class="hidden">
+        <div class="process-wrap">
+            <h2 class="process-title" data-he="🔬 מנתח..." data-en="🔬 Analyzing...">🔬 מנתח...</h2>
+            <!-- פס התקדמות -->
+            <div class="progress-track"><div class="progress-fill" id="pBar"></div></div>
+            <div class="progress-label" id="pText">0%</div>
+            <div class="ai-msg" id="aiMsg" data-he="מאתחל..." data-en="Initializing...">מאתחל...</div>
+            <!-- צ'קליסט שלבים -->
+            <div class="status-grid">
+                <div class="status-chip"><span class="status-dot" id="st-extract">⏳</span><span data-he="חילוץ" data-en="Extract">חילוץ</span></div>
+                <div class="status-chip"><span class="status-dot" id="st-narrative">⏳</span><span data-he="נרטיב" data-en="Narrative">נרטיב</span></div>
+                <div class="status-chip"><span class="status-dot" id="st-intel">⏳</span><span data-he="מודיעין" data-en="Intel">מודיעין</span></div>
+                <div class="status-chip"><span class="status-dot" id="st-valid">⏳</span><span data-he="אימות" data-en="Validate">אימות</span></div>
+                <div class="status-chip"><span class="status-dot" id="st-evidence">⏳</span><span data-he="ראיות" data-en="Evidence">ראיות</span></div>
+                <div class="status-chip"><span class="status-dot" id="st-consistency">⏳</span><span data-he="עקביות" data-en="Consistency">עקביות</span></div>
+                <div class="status-chip"><span class="status-dot" id="st-ui">⏳</span><span data-he="סיום" data-en="Finalize">סיום</span></div>
+            </div>
+            <!-- לוג טכני -->
+            <div class="logs-box" id="logsBox"></div>
+            <button class="btn-outline btn-cancel" id="btnCancel" data-he="ביטול" data-en="Cancel">ביטול</button>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: RESULT — מסך תוצאות / דוח
+    ═══════════════════════════════════════════ -->
+    <section id="screen-result" class="hidden">
+        <!-- ═══ מטריקות ראשיות — גריד קומפקטי 2×3 ═══ -->
+        <div class="metrics-compact">
+            <div class="mc-card" id="trust-card">
+                <span class="mc-label" data-he="אמינות" data-en="Truth">אמינות <span class="info-tip" data-tip="ציון אמינות עובדתית — עד כמה התוכן מדויק ואמין">i</span></span>
+                <span class="mc-value metric-value" id="m-truth">0%</span>
+                <span class="mc-desc" id="m-truth-desc"></span>
+            </div>
+            <div class="mc-card">
+                <span class="mc-label" data-he="אותנטיות" data-en="Authenticity">אותנטיות <span class="info-tip" data-tip="עד כמה התוכן מקורי ולא עבר מניפולציה">i</span></span>
+                <span class="mc-value metric-value" id="m-authenticity">0%</span>
+                <span class="mc-desc" id="m-authenticity-desc"></span>
+            </div>
+            <div class="mc-card">
+                <span class="mc-label" data-he="סוג נרטיב" data-en="Narrative">סוג נרטיב <span class="info-tip" data-tip="סיווג סוג התוכן: עובדתי, סאטירה, תעמולה וכו׳">i</span></span>
+                <span class="mc-value metric-value" id="m-narrative">—</span>
+                <span class="mc-desc" id="m-narrative-desc"></span>
+            </div>
+            <div class="mc-card">
+                <span class="mc-label" data-he="סיכון" data-en="Risk">סיכון <span class="info-tip" data-tip="רמת הסיכון להטעיה של הקורא/צופה">i</span></span>
+                <span class="mc-value metric-value" id="m-risk">—</span>
+                <span class="mc-desc" id="m-risk-desc"></span>
+            </div>
+            <div class="mc-card">
+                <span class="mc-label" data-he="סיכוי AI" data-en="AI Prob.">סיכוי AI <span class="info-tip" data-tip="הסבירות שהתוכן נוצר על ידי בינה מלאכותית">i</span></span>
+                <span class="mc-value metric-value" id="m-ai">0%</span>
+                <span class="mc-desc" id="m-ai-desc"></span>
+            </div>
+            <div class="mc-card">
+                <span class="mc-label" data-he="ביטחון" data-en="Confidence">ביטחון <span class="info-tip" data-tip="רמת הביטחון של המערכת בתוצאות הניתוח">i</span></span>
+                <span class="mc-value metric-value" id="m-confidence">0%</span>
+                <span class="mc-desc" id="m-confidence-desc"></span>
+            </div>
+        </div>
+
+        <!-- ═══ תגיות ═══ -->
+        <div class="tags-row" id="tagsSection"></div>
+
+        <!-- ═══ סיכום ═══ -->
+        <div class="summary-card">
+            <h3 data-he="📝 סיכום" data-en="📝 Summary">📝 סיכום</h3>
+            <p id="summaryText"></p>
+        </div>
+
+        <!-- ═══ ממצאים מאומתים / שנמחקו (Evidence) ═══ -->
+        <div class="detail-card hidden" id="evidence-section">
+            <div class="toggle-head" data-target="evidenceBody">
+                <span data-he="📑 ממצאים מפורטים" data-en="📑 Detailed Findings">📑 ממצאים מפורטים</span>
+                <span class="arrow">▶</span>
+            </div>
+            <div class="collapsed" id="evidenceBody">
+                <h4 data-he="ממצאים מאומתים" data-en="Verified Findings" style="color:#009664;margin:8px 0 4px">ממצאים מאומתים</h4>
+                <ul class="findings-list" id="verified-findings"></ul>
+                <h4 data-he="טענות שהוסרו" data-en="Removed Claims" style="color:#b47832;margin:8px 0 4px">טענות שהוסרו</h4>
+                <ul class="findings-list" id="removed-claims"></ul>
+            </div>
+        </div>
+
+        <!-- ═══ Reality Check — הצלבת מציאות ═══ -->
+        <div class="detail-card hidden" id="research-section">
+            <div class="toggle-head" data-target="researchContent">
+                <span data-he="🔍 הצלבת מציאות" data-en="🔍 Reality Check">🔍 הצלבת מציאות</span>
+                <span class="arrow">▶</span>
+            </div>
+            <div class="collapsed" id="researchContent"></div>
+        </div>
+
+        <!-- ═══ Intelligence — ניתוח מודיעיני ═══ -->
+        <div class="detail-card">
+            <div class="toggle-head" data-target="intelContent">
+                <span data-he="🧠 ניתוח מודיעיני" data-en="🧠 Intelligence">🧠 ניתוח מודיעיני</span>
+                <span class="arrow">▶</span>
+            </div>
+            <div class="collapsed" id="intelContent"></div>
+        </div>
+
+        <!-- ═══ Validation — אימות ═══ -->
+        <div class="detail-card">
+            <div class="toggle-head" data-target="validContent">
+                <span data-he="✅ אימות תוצאות" data-en="✅ Validation">✅ אימות תוצאות</span>
+                <span class="arrow">▶</span>
+            </div>
+            <div class="collapsed" id="validContent"></div>
+        </div>
+
+        <!-- ═══ Pipeline — צינור עיבוד ═══ -->
+        <div class="detail-card">
+            <div class="toggle-head" data-target="pipeContent">
+                <span data-he="⚙️ צינור עיבוד" data-en="⚙️ Pipeline">⚙️ צינור עיבוד</span>
+                <span class="arrow">▶</span>
+            </div>
+            <div class="collapsed" id="pipeContent"></div>
+        </div>
+
+        <!-- ═══ Raw JSON ═══ -->
+        <div class="detail-card">
+            <div class="toggle-head" data-target="rawJson">
+                <span data-he="{ } JSON גולמי" data-en="{ } Raw JSON">{ } JSON גולמי</span>
+                <span class="arrow">▶</span>
+            </div>
+            <pre class="collapsed" id="rawJson"></pre>
+        </div>
+
+        <!-- כפתורי פעולה -->
+        <div class="result-actions">
+            <button class="btn-primary" id="btnNewAnalysis" data-he="ניתוח חדש" data-en="New Analysis">ניתוח חדש</button>
+        </div>
+    </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════
+     BOTTOM NAV — ניווט תחתון (מובייל)
+═══════════════════════════════════════════════════ -->
+<nav class="bottom-nav" id="bottomNav">
+    <button class="nav-tab active" data-screen="history" id="navHistory">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+        </svg>
+        <span data-he="ניתוחים" data-en="History">ניתוחים</span>
+    </button>
+    <button class="nav-tab" data-screen="analyze" id="navAnalyze">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span data-he="ניתוח חדש" data-en="New">ניתוח חדש</span>
+    </button>
+    <button class="nav-tab" data-screen="info" id="navInfo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span data-he="מידע" data-en="About">מידע</span>
+    </button>
+</nav>
+
+<script src="/stage1/app.js"></script>
+</body>
+</html>
