@@ -94,8 +94,15 @@ const HF_CLIENT = (() => {
         '  • The tone is humorous, exaggerated, or ironic\n' +
         '  • The narrative resembles parody or satire\n' +
         '- If absurd elements are present → Strongly consider SATIRE or FICTION\n' +
-        '- Only classify as PROPAGANDA if there is a clear attempt to influence beliefs AND the content appears realistic and deceptive\n' +
-        '- Only classify as MISINFORMATION if the false claims are presented seriously with no humor signals\n\n' +
+        '- Classify as PROPAGANDA if there is a clear attempt to influence beliefs through:\n' +
+        '  • One-sided presentation mixing facts with conspiracy theories\n' +
+        '  • Dramatic, emotional, or fear-inducing imagery/language\n' +
+        '  • References to conspiracy-style documentaries or films\n' +
+        '  • Presenting unverified or controversial claims as established facts\n' +
+        '  • Manipulative framing designed to shape opinions or create fear\n' +
+        '  Note: propaganda CAN contain real facts — classification depends on the FRAMING, not accuracy\n' +
+        '- Only classify as MISINFORMATION if the false claims are presented seriously with no humor signals\n' +
+        '- Only classify as FACTUAL if the content is neutral, balanced reporting without manipulative framing\n\n' +
         'OUTPUT (STRICT JSON ONLY):\n' +
         '{\n' +
         '  "narrative_class": "Satire | Propaganda | Misinformation | Fiction | Factual",\n' +
@@ -612,6 +619,21 @@ const HF_CLIENT = (() => {
         const validation = _parseJson(validRaw);
         if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
         if (!validation.issues) validation.issues = [];
+
+        // ── Validation-based score adjustment ──
+        if (validation.is_valid === false && validation.issues && validation.issues.length >= 3) {
+            const corrConfImg = (validation.corrected_confidence || '').toLowerCase();
+            if (corrConfImg === 'low') {
+                scores.truth_score = Math.min(scores.truth_score, 45);
+                scores.confidence_level = Math.min(scores.confidence_level, 50);
+                if (scores.narrative === 'Factual') {
+                    scores.risk_level = 'Medium';
+                }
+            } else if (corrConfImg === 'medium') {
+                scores.truth_score = Math.min(scores.truth_score, 60);
+                scores.confidence_level = Math.min(scores.confidence_level, 60);
+            }
+        }
 
         // ── Evidence Filter ──
         prog(78, 'סינון ראיות...');
@@ -1322,6 +1344,21 @@ const HF_CLIENT = (() => {
         const validation = _parseJson(validRaw);
         if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
         if (!validation.issues) validation.issues = [];
+
+        // ═══ Validation-based score adjustment ═══
+        if (validation.is_valid === false && validation.issues && validation.issues.length >= 3) {
+            const corrConf = (validation.corrected_confidence || '').toLowerCase();
+            if (corrConf === 'low') {
+                scores.truth_score = Math.min(scores.truth_score, 45);
+                scores.confidence_level = Math.min(scores.confidence_level, 50);
+                if (scores.narrative === 'Factual') {
+                    scores.risk_level = 'Medium';
+                }
+            } else if (corrConf === 'medium') {
+                scores.truth_score = Math.min(scores.truth_score, 60);
+                scores.confidence_level = Math.min(scores.confidence_level, 60);
+            }
+        }
 
         // ═══ Evidence Filter ═══
         prog(89, 'סינון ראיות...');
