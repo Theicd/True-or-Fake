@@ -115,7 +115,6 @@ try {
     # 9) New pipeline steps matching backend
     Add-Result -Name "HF Client has P_QUESTIONS prompt" -Passed ($hfc.Contains("P_QUESTIONS")) -Details ""
     Add-Result -Name "HF Client has P_SUMMARY prompt" -Passed ($hfc.Contains("P_SUMMARY")) -Details ""
-    Add-Result -Name "HF Client has P_CLAIM_EXTRACTION prompt" -Passed ($hfc.Contains("P_CLAIM_EXTRACTION")) -Details ""
     Add-Result -Name "HF Client has P_VALIDATION prompt" -Passed ($hfc.Contains("P_VALIDATION")) -Details ""
     Add-Result -Name "HF Client has P_EVIDENCE_FILTER prompt" -Passed ($hfc.Contains("P_EVIDENCE_FILTER")) -Details ""
     Add-Result -Name "HF Client text_merge step in video" -Passed ($hfc.Contains("text_merge")) -Details ""
@@ -126,7 +125,6 @@ try {
     Add-Result -Name "HF Client dual AI classifier (first+mid)" -Passed ($hfc.Contains("framesToClassify")) -Details ""
     Add-Result -Name "HF Client validation object returned" -Passed ($hfc.Contains("validation: validation")) -Details ""
     Add-Result -Name "HF Client evidence_filter object returned" -Passed ($hfc.Contains("evidence_filter: evidenceFilter")) -Details ""
-    Add-Result -Name "HF Client research/claims structure" -Passed ($hfc.Contains("research: research")) -Details ""
     Add-Result -Name "HF Client Whisper WAV fallback" -Passed ($hfc.Contains("audio/wav")) -Details ""
     Add-Result -Name "HF Client smart frame selection" -Passed ($hfc.Contains("selectedTimes") -or $hfc.Contains("smart")) -Details ""
 

@@ -160,7 +160,6 @@ function getHistory() {
 function buildRelaySnapshot(data) {
     const ui = data.ui_data || {};
     const metrics = ui.ui_metrics || {};
-    const research = data.research || {};
     const intel = data.intelligence || {};
     const valid = data.validation || {};
 
@@ -196,15 +195,6 @@ function buildRelaySnapshot(data) {
         validation: {
             is_valid: valid.is_valid !== false,
             issues: (valid.issues || []).slice(0, 10),
-        },
-        research: {
-            claims: (research.claims || []).slice(0, 10),
-            verified: (research.verified || []).slice(0, 8),
-            contradicted: (research.contradicted || []).slice(0, 8),
-            partially_verified: (research.partially_verified || []).slice(0, 8),
-            not_verified: (research.not_verified || research.unverified || []).slice(0, 8),
-            reliability: research.reliability || {},
-            context_summary: research.context_summary || '',
         },
         diagnostics: {
             degraded_mode: !!(data.diagnostics && data.diagnostics.degraded_mode),
@@ -245,7 +235,6 @@ function buildFallbackReportFromHistory(item) {
             key_findings: [isHe ? 'מקור הדוח נטען מהיסטוריה' : 'Report loaded from history source'],
         },
         validation: { is_valid: true, issues: [] },
-        research: {},
         output: { summary },
         diagnostics: {
             degraded_mode: true,
@@ -1091,7 +1080,6 @@ function buildAudioInspectionResult(file, blossomUrl) {
             is_valid: true,
             issues: [currentLang === 'he' ? 'אין מודול ניתוח אודיו פעיל' : 'No active audio analysis module'],
         },
-        research: {},
         diagnostics: {
             degraded_mode: true,
             issues: [currentLang === 'he' ? 'אודיו בלבד: שמירה וסיווג' : 'Audio only: storage + classification'],
@@ -1431,114 +1419,11 @@ function renderResult(data) {
         evSection.classList.add('hidden');
     }
 
-    // ── Research / Intel / Validation / Pipeline ──
-    renderResearch(ui.research || data.research || {});
+    // ── Intel / Validation / Pipeline ──
     renderIntel(intel);
     renderValidation(valid);
     renderPipeline(data.pipeline || []);
     $('rawJson').textContent = JSON.stringify(data, null, 2);
-}
-
-// ═══════════════════════════════════════════════
-//  RENDER REALITY CHECK — הצלבת מציאות
-// ═══════════════════════════════════════════════
-function renderResearch(research) {
-    const section = $('research-section');
-    const content = $('researchContent');
-    if (!research || (!research.claims?.length && !research.verified?.length && !research.contradicted?.length && !research.unverified?.length && !research.verification_results?.length)) {
-        section.classList.add('hidden');
-        return;
-    }
-    section.classList.remove('hidden');
-    const isHe = currentLang === 'he';
-    let h = '';
-
-    // ── Reliability Bar ──
-    const rel = research.reliability || {};
-    if (rel.final_reliability > 0) {
-        const relColor = rel.final_reliability >= 60 ? '#22c55e' : rel.final_reliability >= 35 ? '#f59e0b' : '#ef4444';
-        h += '<div class="rel-bar"><div class="rel-header">';
-        h += '<span class="rel-title">' + (isHe ? '🛡️ אמינות כוללת' : '🛡️ Reliability') + '</span>';
-        h += '<span class="rel-score" style="color:' + relColor + '">' + Math.round(rel.final_reliability) + '%</span>';
-        h += '</div>';
-        h += '<div class="rel-track"><div class="rel-fill" style="width:' + rel.final_reliability + '%;background:' + relColor + '"></div></div>';
-        h += '<div class="rel-details">';
-        h += '<span>' + (isHe ? 'תוכן: ' : 'Content: ') + '<strong>' + Math.round(rel.content_reliability || 0) + '%</strong></span>';
-        h += '<span>' + (isHe ? 'מקור: ' : 'Source: ') + '<strong>' + Math.round(rel.source_reliability || 0) + '%</strong></span>';
-        h += '<span>' + (isHe ? 'אימות: ' : 'Verify: ') + '<strong>' + Math.round(rel.verification_score || 0) + '%</strong></span>';
-        h += '</div></div>';
-    }
-
-    // ── Claims ──
-    if (research.claims?.length) {
-        h += '<div class="rce-section"><span class="rce-label">' + (isHe ? '📝 טענות:' : '📝 Claims:') + '</span>';
-        h += '<div class="rce-tags">';
-        research.claims.forEach(c => { h += '<span class="tag tag-blue">' + esc(c) + '</span>'; });
-        h += '</div></div>';
-    }
-
-    function _verifyItem(v, color) {
-        const claim = typeof v === 'object' ? v.claim : v;
-        const evidence = typeof v === 'object' ? (v.evidence || v.reason || '') : '';
-        const conf = typeof v === 'object' ? v.confidence : null;
-        let li = '<li style="color:' + color + '"><strong>' + esc(claim) + '</strong>';
-        if (conf != null) li += ' <span class="conf-badge">' + conf + '%</span>';
-        if (evidence) li += '<br><span class="ev-text">' + esc(evidence) + '</span>';
-        li += '</li>';
-        return li;
-    }
-
-    if (research.verified?.length) {
-        h += '<div class="rce-section"><h4 style="color:#009664">✅ ' + (isHe ? 'אומתו' : 'Verified') + ' (' + research.verified.length + ')</h4>';
-        h += '<ul class="findings-list">';
-        research.verified.forEach(v => { h += _verifyItem(v, '#009664'); });
-        h += '</ul></div>';
-    }
-    if (research.partially_verified?.length) {
-        h += '<div class="rce-section"><h4 style="color:#f59e0b">🔶 ' + (isHe ? 'חלקית' : 'Partial') + ' (' + research.partially_verified.length + ')</h4>';
-        h += '<ul class="findings-list">';
-        research.partially_verified.forEach(v => { h += _verifyItem(v, '#f59e0b'); });
-        h += '</ul></div>';
-    }
-    if (research.contradicted?.length) {
-        h += '<div class="rce-section"><h4 style="color:#ff5555">❌ ' + (isHe ? 'נסתרו' : 'Contradicted') + ' (' + research.contradicted.length + ')</h4>';
-        h += '<ul class="findings-list">';
-        research.contradicted.forEach(c => { h += _verifyItem(c, '#ff5555'); });
-        h += '</ul></div>';
-    }
-    const notVerified = research.not_verified?.length ? research.not_verified : research.unverified || [];
-    if (notVerified.length) {
-        h += '<div class="rce-section"><h4 style="color:#b47832">⚠ ' + (isHe ? 'לא אומתו' : 'Unverified') + ' (' + notVerified.length + ')</h4>';
-        h += '<ul class="findings-list">';
-        notVerified.forEach(u => { h += _verifyItem(u, '#b47832'); });
-        h += '</ul></div>';
-    }
-
-    // ── Context ──
-    if (research.context_summary) {
-        h += '<div class="rce-context">';
-        h += '<strong>' + (isHe ? '🧠 הקשר:' : '🧠 Context:') + '</strong> ' + esc(research.context_summary);
-        h += '</div>';
-    }
-
-    // ── Questions ──
-    if (research.questions?.length) {
-        h += '<details class="rce-details"><summary>' + (isHe ? '❓ שאלות חקירה (' + research.questions.length + ')' : '❓ Questions (' + research.questions.length + ')') + '</summary>';
-        h += '<ul class="findings-list">';
-        research.questions.forEach(q => {
-            const qText = typeof q === 'object' ? q.question : q;
-            h += '<li style="color:#8aa0b3">' + esc(qText) + '</li>';
-        });
-        h += '</ul></details>';
-    }
-
-    // ── Stats ──
-    const total = (research.verified?.length || 0) + (research.contradicted?.length || 0) + (research.partially_verified?.length || 0) + (research.not_verified?.length || 0) || ((research.verified?.length || 0) + (research.contradicted?.length || 0) + (research.unverified?.length || 0));
-    if (total > 0) {
-        h += '<div class="rce-stats">' + (isHe ? 'סה"כ: ' : 'Total: ') + total + (isHe ? ' טענות נבדקו' : ' checked') + '</div>';
-    }
-
-    content.innerHTML = h;
 }
 
 // ═══════════════════════════════════════════════

@@ -143,16 +143,7 @@ const HF_CLIENT = (() => {
         'NO assumptions. NO judgments. Keep it factual and structured.\n' +
         'Write in the main language of the content.';
 
-    const P_CLAIM_EXTRACTION =
-        'Extract all factual claims from the content analysis.\n\n' +
-        'Rules:\n' +
-        '- Only explicit, verifiable claims\n' +
-        '- No interpretation or opinion\n' +
-        '- Short sentences\n' +
-        '- Maximum 8 claims\n' +
-        '- Write claims in HEBREW if content is Hebrew, otherwise English\n\n' +
-        'OUTPUT (STRICT JSON ONLY):\n' +
-        '{\n  "claims": ["טענה 1", "טענה 2"]\n}';
+
 
     const P_VALIDATION =
         'You are a validation system.\n' +
@@ -381,7 +372,8 @@ const HF_CLIENT = (() => {
     function _computeScores(output, aiStep, narrativeResult) {
         const narr = narrativeResult || {};
         const narrClass = narr.narrative_class || 'Unclear';
-        const narrConf = narr.confidence || 0;
+        const rawConf = narr.confidence || 0;
+        const narrConf = rawConf <= 1 ? rawConf * 100 : rawConf;
         const absurdity = !!narr.absurdity_detected;
 
         let aiProb = 0;
@@ -570,30 +562,8 @@ const HF_CLIENT = (() => {
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
 
-        // ── Reality Check: Claim Extraction ──
-        prog(68, 'בדיקת מציאות...');
-        const claimPrompt =
-            'INPUT DATA:\n' +
-            JSON.stringify({ meta, ocr_text: ocrText, caption: capR, narrative: narrativeResult.narrative_class }).slice(0, 2000) + '\n\n' +
-            P_CLAIM_EXTRACTION;
-        const claimRaw = await _apiChat(claimPrompt, token, 'You are a fact-checking system.', 512);
-        const claimResult = _parseJson(claimRaw);
-        const claims = Array.isArray(claimResult.claims) ? claimResult.claims : [];
-
-        const research = {
-            claims: claims,
-            verified: [],
-            contradicted: [],
-            not_verified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
-            unverified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
-            context_summary: 'בדיקת מקורות חיצוניים אינה זמינה במצב דפדפן.',
-            sources_searched: 0,
-            engines_used: [],
-            is_part_of_larger_event: false,
-        };
-
         // ── Validation ──
-        prog(73, 'אימות תוצאות...');
+        prog(70, 'אימות תוצאות...');
         const validPrompt =
             'INPUT DATA (original):\n' +
             'OCR: ' + (ocrText || '(none)').slice(0, 300) + '\n' +
@@ -652,7 +622,6 @@ const HF_CLIENT = (() => {
             removed_claims: evidenceFilter.removed_claims || [],
             evidence_quality: evidenceFilter.evidence_quality || 'Moderate',
             humor_signals: narrativeResult.humor_signals || [],
-            research: research,
         };
 
         prog(90, 'סיום...');
@@ -667,7 +636,6 @@ const HF_CLIENT = (() => {
             scores: scores,
             narrative: narrativeResult,
             intelligence: intelligence,
-            research: research,
             validation: validation,
             evidence_filter: evidenceFilter,
             ui_data: uiData,
@@ -1210,31 +1178,8 @@ const HF_CLIENT = (() => {
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
 
-        // ═══ Reality Check: Claim Extraction ═══
-        prog(84, 'מנוע בדיקת מציאות...');
-        const claimPrompt =
-            'INPUT DATA:\n' +
-            JSON.stringify({ meta, speech_text: speechText, ocr_text: allOcr, summary: summaryText, narrative: narrativeResult.narrative_class }).slice(0, 2000) + '\n\n' +
-            P_CLAIM_EXTRACTION;
-        const claimRaw = await _apiChat(claimPrompt, token, 'You are a fact-checking system.', 512);
-        const claimResult = _parseJson(claimRaw);
-        const claims = Array.isArray(claimResult.claims) ? claimResult.claims : [];
-
-        // Build research section (no external search from browser, but structured)
-        const research = {
-            claims: claims,
-            verified: [],
-            contradicted: [],
-            not_verified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
-            unverified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
-            context_summary: 'בדיקת מקורות חיצוניים אינה זמינה במצב דפדפן. הטענות לא אומתו.',
-            sources_searched: 0,
-            engines_used: [],
-            is_part_of_larger_event: false,
-        };
-
         // ═══ Validation ═══
-        prog(87, 'אימות תוצאות...');
+        prog(85, 'אימות תוצאות...');
         const validPrompt =
             'INPUT DATA (original):\n' +
             'Speech: ' + (speechText || '(none)').slice(0, 300) + '\n' +
@@ -1295,7 +1240,6 @@ const HF_CLIENT = (() => {
             removed_claims: evidenceFilter.removed_claims || [],
             evidence_quality: evidenceFilter.evidence_quality || 'Moderate',
             humor_signals: narrativeResult.humor_signals || [],
-            research: research,
         };
 
         prog(95, 'סיום...');
@@ -1309,7 +1253,6 @@ const HF_CLIENT = (() => {
             scores: scores,
             narrative: narrativeResult,
             intelligence: intelligence,
-            research: research,
             validation: validation,
             evidence_filter: evidenceFilter,
             ui_data: uiData,
