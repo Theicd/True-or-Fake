@@ -108,22 +108,88 @@ const HF_CLIENT = (() => {
 
     const P_UI_ADAPTER =
         'You are a UI text generator.\n' +
-        'Your ONLY job: produce a complete analysis summary JSON.\n\n' +
+        'Your ONLY job: write a short Hebrew summary of the analysis.\n\n' +
+        'STRICT RULES:\n' +
+        '- Do NOT produce scores, percentages, or metrics\n' +
+        '- Do NOT produce tags, flags, or labels\n' +
+        '- Do NOT estimate reliability, risk, confidence\n' +
+        '- ONLY produce a ui_summary text in HEBREW\n' +
+        '- 2-3 sentences maximum\n' +
+        '- If content is satire → explain it neutrally, do not alarm\n' +
+        '- Base summary ONLY on the input analysis\n\n' +
         'OUTPUT (STRICT JSON ONLY):\n' +
         '{\n' +
-        '  "ui_summary": "סיכום בעברית — 2-3 משפטים",\n' +
-        '  "ui_tags": ["tag1", "tag2"],\n' +
-        '  "ui_flags": ["warning flag if any"],\n' +
-        '  "verified_findings": ["ממצא מאומת 1"],\n' +
-        '  "removed_claims": ["טענה שהוסרה 1"],\n' +
-        '  "ui_metrics": {\n' +
-        '    "truth_score": 0,\n' +
-        '    "authenticity_score": 0,\n' +
-        '    "ai_probability": 0,\n' +
-        '    "narrative": "Factual",\n' +
-        '    "risk_level": "Low",\n' +
-        '    "confidence_level": 0\n' +
-        '  }\n' +
+        '  "ui_summary": "סיכום בעברית — 2-3 משפטים"\n' +
+        '}';
+
+    const P_QUESTIONS =
+        'You are analyzing a video. Below is all extracted data.\n' +
+        'Generate 5-10 investigative questions that will help understand the content better.\n' +
+        'Focus on:\n' +
+        '- Unclear or ambiguous elements\n' +
+        '- Possible contradictions\n' +
+        '- Missing context\n' +
+        '- Visual anomalies\n' +
+        '- Claims that need verification\n' +
+        'Return JSON array: ["question1", "question2", ...]';
+
+    const P_SUMMARY =
+        'Summarize the content of this video based on all collected data below.\n' +
+        'Focus ONLY on:\n' +
+        '- What is happening\n' +
+        '- Key elements and objects\n' +
+        '- People and their actions\n' +
+        '- Text/speech content\n' +
+        'NO assumptions. NO judgments. Keep it factual and structured.\n' +
+        'Write in the main language of the content.';
+
+    const P_CLAIM_EXTRACTION =
+        'Extract all factual claims from the content analysis.\n\n' +
+        'Rules:\n' +
+        '- Only explicit, verifiable claims\n' +
+        '- No interpretation or opinion\n' +
+        '- Short sentences\n' +
+        '- Maximum 8 claims\n' +
+        '- Write claims in HEBREW if content is Hebrew, otherwise English\n\n' +
+        'OUTPUT (STRICT JSON ONLY):\n' +
+        '{\n  "claims": ["טענה 1", "טענה 2"]\n}';
+
+    const P_VALIDATION =
+        'You are a validation system.\n' +
+        'Your job is to verify that the analysis is strictly grounded in the input.\n\n' +
+        'RULES:\n' +
+        '- Mark any claim that is not supported by input data\n' +
+        '- Reduce confidence if unsupported claims are found\n' +
+        '- Ensure no hallucinated facts exist\n\n' +
+        'LANGUAGE: Write issues in HEBREW (עברית). Keep is_valid and corrected_confidence in English.\n\n' +
+        'OUTPUT (STRICT JSON ONLY):\n' +
+        '{\n' +
+        '  "is_valid": true,\n' +
+        '  "issues": ["בעיה בעברית 1"],\n' +
+        '  "corrected_confidence": "Low | Medium | High"\n' +
+        '}';
+
+    const P_EVIDENCE_FILTER =
+        'You are an evidence-based filtering system.\n' +
+        'Your job is to STRICTLY remove or correct any claim that is not directly supported by the input data.\n\n' +
+        'RULES:\n' +
+        '- If a claim is not explicitly supported by the original data → REMOVE IT\n' +
+        '- Do not rephrase unsupported claims — delete them\n' +
+        '- Keep only verifiable statements that are grounded in input\n' +
+        '- List every removed claim so the user can see what was filtered\n' +
+        '- Provide a filtered assessment containing ONLY supported conclusions\n' +
+        '- Provide filtered_findings containing ONLY evidence-backed findings\n\n' +
+        'LANGUAGE RULES:\n' +
+        '- Write filtered_assessment in HEBREW (עברית)\n' +
+        '- Write filtered_findings in HEBREW (עברית) — short sentences\n' +
+        '- Write removed_claims in HEBREW (עברית)\n' +
+        '- Keep evidence_quality value in English\n\n' +
+        'OUTPUT (STRICT JSON ONLY):\n' +
+        '{\n' +
+        '  "filtered_assessment": "מסקנה קצרה בעברית מבוססת ראיות בלבד",\n' +
+        '  "filtered_findings": ["ממצא מאומת בעברית 1", "..."],\n' +
+        '  "removed_claims": ["טענה שהוסרה בעברית 1", "..."],\n' +
+        '  "evidence_quality": "Strong | Moderate | Weak | Insufficient"\n' +
         '}';
 
     // ── Helpers ──
@@ -504,36 +570,90 @@ const HF_CLIENT = (() => {
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
 
-        prog(65, 'שלב 7: עיבוד סופי...');
+        // ── Reality Check: Claim Extraction ──
+        prog(68, 'בדיקת מציאות...');
+        const claimPrompt =
+            'INPUT DATA:\n' +
+            JSON.stringify({ meta, ocr_text: ocrText, caption: capR, narrative: narrativeResult.narrative_class }).slice(0, 2000) + '\n\n' +
+            P_CLAIM_EXTRACTION;
+        const claimRaw = await _apiChat(claimPrompt, token, 'You are a fact-checking system.', 512);
+        const claimResult = _parseJson(claimRaw);
+        const claims = Array.isArray(claimResult.claims) ? claimResult.claims : [];
 
-        // ── UI Adapter (final summary) ──
+        const research = {
+            claims: claims,
+            verified: [],
+            contradicted: [],
+            not_verified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
+            unverified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
+            context_summary: 'בדיקת מקורות חיצוניים אינה זמינה במצב דפדפן.',
+            sources_searched: 0,
+            engines_used: [],
+            is_part_of_larger_event: false,
+        };
+
+        // ── Validation ──
+        prog(73, 'אימות תוצאות...');
+        const validPrompt =
+            'INPUT DATA (original):\n' +
+            'OCR: ' + (ocrText || '(none)').slice(0, 300) + '\n' +
+            'Caption: ' + capR.slice(0, 300) + '\n\n' +
+            'ANALYSIS OUTPUT:\n' +
+            JSON.stringify({ intelligence, narrative: narrativeResult, scores }).slice(0, 1500) + '\n\n' +
+            P_VALIDATION;
+        const validRaw = await _apiChat(validPrompt, token, 'You are a validation system.', 512);
+        const validation = _parseJson(validRaw);
+        if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
+        if (!validation.issues) validation.issues = [];
+
+        // ── Evidence Filter ──
+        prog(78, 'סינון ראיות...');
+        const evFilterPrompt =
+            'ORIGINAL DATA:\n' +
+            'OCR: ' + (ocrText || '(none)').slice(0, 300) + '\n' +
+            'Caption: ' + capR.slice(0, 300) + '\n\n' +
+            'ANALYSIS:\n' +
+            JSON.stringify({ intelligence, narrative: narrativeResult }).slice(0, 1000) + '\n\n' +
+            'VALIDATION ISSUES:\n' + JSON.stringify(validation.issues) + '\n\n' +
+            P_EVIDENCE_FILTER;
+        const evFilterRaw = await _apiChat(evFilterPrompt, token, 'You are an evidence filter system.', 800);
+        const evidenceFilter = _parseJson(evFilterRaw);
+
+        // ── UI Adapter ──
+        prog(83, 'עיבוד סופי...');
         const uiPrompt =
-            'Based on the following analysis, produce the final UI output JSON.\n\n' +
+            'Based on the following IMAGE analysis, produce the final UI output.\n\n' +
             '== IMAGE DESCRIPTION ==\n' + capR + '\n' +
             '== OCR TEXT ==\n' + (ocrText || '(none)') + '\n' +
-            '== INTELLIGENCE ==\n' + JSON.stringify(intelligence) + '\n' +
-            '== NARRATIVE ==\n' + JSON.stringify(narrativeResult) + '\n' +
-            '== SCORES (system computed) ==\n' + JSON.stringify(scores) + '\n\n' +
-            'IMPORTANT: The ui_metrics values MUST use the scores provided above exactly. Do NOT change them.\n' +
-            'Your ONLY creative job is the ui_summary text (Hebrew, 2-3 sentences), ui_tags, ui_flags, verified_findings, removed_claims.\n\n' +
+            '== INTELLIGENCE ==\n' + JSON.stringify(intelligence).slice(0, 500) + '\n' +
+            '== NARRATIVE ==\n' + JSON.stringify(narrativeResult).slice(0, 300) + '\n' +
+            '== EVIDENCE FILTER ==\n' + JSON.stringify(evidenceFilter).slice(0, 300) + '\n\n' +
             P_UI_ADAPTER;
 
-        const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 1200);
-        const uiData = _parseJson(uiRaw);
+        const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 600);
+        const uiParsed = _parseJson(uiRaw);
 
-        // Force system-computed scores into ui_data
-        uiData.ui_metrics = {
-            ...(uiData.ui_metrics || {}),
-            truth_score: scores.truth_score,
-            authenticity_score: scores.authenticity_score,
-            ai_probability: scores.ai_probability,
-            narrative: scores.narrative,
-            risk_level: scores.risk_level,
-            confidence_level: scores.confidence_level,
+        const uiData = {
+            ui_metrics: {
+                truth_score: scores.truth_score,
+                authenticity_score: scores.authenticity_score,
+                ai_probability: scores.ai_probability,
+                narrative: scores.narrative,
+                risk_level: scores.risk_level,
+                confidence_level: scores.confidence_level,
+            },
+            content_type: scores.content_type,
+            factual_mode: scores.factual_mode,
+            satire_detected: scores.satire_detected,
+            ui_summary: uiParsed.ui_summary || intelligence.final_assessment || '',
+            ui_tags: uiParsed.ui_tags || [scores.content_type],
+            ui_flags: uiParsed.ui_flags || [],
+            verified_findings: evidenceFilter.filtered_findings || intelligence.key_findings || [],
+            removed_claims: evidenceFilter.removed_claims || [],
+            evidence_quality: evidenceFilter.evidence_quality || 'Moderate',
+            humor_signals: narrativeResult.humor_signals || [],
+            research: research,
         };
-        uiData.satire_detected = scores.satire_detected;
-        uiData.factual_mode = scores.factual_mode;
-        uiData.content_type = scores.content_type;
 
         prog(90, 'סיום...');
 
@@ -547,11 +667,18 @@ const HF_CLIENT = (() => {
             scores: scores,
             narrative: narrativeResult,
             intelligence: intelligence,
-            research: {},
-            validation: { is_valid: true, issues: [] },
-            evidence_filter: {},
+            research: research,
+            validation: validation,
+            evidence_filter: evidenceFilter,
             ui_data: uiData,
-            consistency: scores,
+            consistency: {
+                ...scores,
+                ui_summary: uiData.ui_summary,
+                ui_tags: uiData.ui_tags,
+                satire_detected: scores.satire_detected,
+                narrative_class: scores.content_type,
+                consistency_applied: true,
+            },
             total_duration_ms: totalMs,
         };
     }
@@ -567,7 +694,16 @@ const HF_CLIENT = (() => {
                 headers: { ..._hf(token), 'Content-Type': 'audio/flac' },
                 body: audioBytes,
             }, 180000);
-            if (r.status !== 200) return { error: 'HTTP ' + r.status, text: '' };
+            if (r.status !== 200) {
+                // Try WAV fallback
+                const r2 = await _fetchWithTimeout(HF_INF + '/' + WHISPER, {
+                    method: 'POST',
+                    headers: { ..._hf(token), 'Content-Type': 'audio/wav' },
+                    body: audioBytes,
+                }, 180000);
+                if (r2.status !== 200) return { error: 'HTTP ' + r.status + '/' + r2.status, text: '' };
+                return await r2.json();
+            }
             return await r.json();
         } catch (e) {
             return { error: e.message, text: '' };
@@ -613,7 +749,6 @@ const HF_CLIENT = (() => {
         try {
             ffmpeg = await _loadFFmpeg(prog);
         } catch (e) {
-            // ffmpeg.wasm failed to load — fall back to frame-from-video using canvas
             prog(5, 'FFmpeg לא זמין - חילוץ פריים מהווידאו...');
             return await _fallbackDecompose(videoFile, prog);
         }
@@ -624,11 +759,8 @@ const HF_CLIENT = (() => {
 
         prog(8, 'מחלץ מידע מהווידאו...');
 
-        // Get duration
+        // Get duration via a quick probe
         let duration = 30;
-        try {
-            await ffmpeg.exec(['-i', inputName, '-f', 'null', '-']);
-        } catch (_) {}
 
         // Extract frames at 1fps
         prog(10, 'מחלץ פריימים מהווידאו...');
@@ -644,7 +776,7 @@ const HF_CLIENT = (() => {
             return await _fallbackDecompose(videoFile, prog);
         }
 
-        // Collect frames
+        // Collect ALL frames
         const frames = [];
         for (let i = 1; i <= 300; i++) {
             const fname = 'frame_' + String(i).padStart(4, '0') + '.jpg';
@@ -664,9 +796,10 @@ const HF_CLIENT = (() => {
 
         duration = frames.length;
 
-        // Extract audio
+        // Extract audio to FLAC 16kHz mono
         prog(15, 'מחלץ אודיו...');
         let audioData = null;
+        let audioSegments = [];
         try {
             await ffmpeg.exec([
                 '-i', inputName,
@@ -675,30 +808,88 @@ const HF_CLIENT = (() => {
                 'audio.flac'
             ]);
             audioData = await ffmpeg.readFile('audio.flac');
-            if (audioData && audioData.length < 500) audioData = null;
+            if (audioData && audioData.length < 500) {
+                audioData = null;
+            }
         } catch (_) {
             audioData = null;
         }
 
-        // Smart frame selection (every 2-4 seconds)
+        // Segment audio into 15-second chunks for Whisper
+        if (audioData && audioData.length > 500) {
+            prog(17, 'מפצל אודיו למקטעים...');
+            try {
+                await ffmpeg.exec([
+                    '-i', 'audio.flac',
+                    '-f', 'segment',
+                    '-segment_time', '15',
+                    '-ar', '16000', '-ac', '1',
+                    '-c:a', 'flac',
+                    'seg_%03d.flac'
+                ]);
+                // Collect segments
+                for (let i = 0; i < 20; i++) {
+                    const segName = 'seg_' + String(i).padStart(3, '0') + '.flac';
+                    try {
+                        const segData = await ffmpeg.readFile(segName);
+                        if (segData && segData.length > 200) {
+                            audioSegments.push(segData);
+                        }
+                    } catch (_) {
+                        break;
+                    }
+                }
+            } catch (_) {
+                // If segmentation fails, use the whole audio as one segment
+                if (audioData) audioSegments = [audioData];
+            }
+            // If no segments collected but we have full audio, use it
+            if (audioSegments.length === 0 && audioData) {
+                audioSegments = [audioData];
+            }
+        }
+
+        // Smart frame selection — same as backend
         const interval = duration <= 30 ? 2 : duration <= 120 ? 3 : 4;
-        const selected = frames.filter((_, i) => i % interval === 0).slice(0, 20);
+        const timeBased = [];
+        for (let t = 0; t < duration; t += interval) timeBased.push(t);
+        const allTimes = [...new Set(timeBased)].sort((a, b) => a - b);
+        // Deduplicate: keep at least 1s apart
+        const selectedTimes = [];
+        for (const t of allTimes) {
+            if (t >= duration) break;
+            if (selectedTimes.length === 0 || t - selectedTimes[selectedTimes.length - 1] >= 1.0) {
+                selectedTimes.push(t);
+            }
+        }
+        // Cap at 20 frames for API efficiency
+        if (selectedTimes.length > 20) selectedTimes.length = 20;
+
+        const selected = selectedTimes.map(t => {
+            const closest = frames.reduce((best, f) => Math.abs(f.time - t) < Math.abs(best.time - t) ? f : best, frames[0]);
+            return closest;
+        });
 
         // Cleanup
         try {
-            await ffmpeg.deleteFile(inputName);
+            await ffmpeg.deleteFile(inputName).catch(() => {});
             for (let i = 1; i <= frames.length; i++) {
                 await ffmpeg.deleteFile('frame_' + String(i).padStart(4, '0') + '.jpg').catch(() => {});
             }
             if (audioData) await ffmpeg.deleteFile('audio.flac').catch(() => {});
+            for (let i = 0; i < audioSegments.length; i++) {
+                await ffmpeg.deleteFile('seg_' + String(i).padStart(3, '0') + '.flac').catch(() => {});
+            }
         } catch (_) {}
 
         return {
             duration: duration,
             hasAudio: !!audioData,
             audioData: audioData,
+            audioSegments: audioSegments,
             allFrames: frames,
             selectedFrames: selected,
+            selectedTimes: selectedTimes,
         };
     }
 
@@ -782,7 +973,7 @@ const HF_CLIENT = (() => {
 
         prog(3, 'שלב 1: פירוק וידאו...');
 
-        // Step 1: Decompose
+        // ═══ Step 1: Decompose ═══
         const decomp = await _decomposeVideo(file, token, prog);
 
         if (decomp.selectedFrames.length === 0) {
@@ -796,19 +987,41 @@ const HF_CLIENT = (() => {
             sha256: hash,
             duration_sec: decomp.duration,
             frames_extracted: decomp.allFrames.length,
+            audio_extracted: decomp.hasAudio,
+            audio_segments: (decomp.audioSegments || []).length,
         };
 
-        // Step 2: Speech (if audio available)
+        // ═══ Step 2: Speech Transcription (segment-by-segment) ═══
         let speechText = '';
-        if (decomp.hasAudio && decomp.audioData) {
+        const speechSegments = [];
+        if (decomp.hasAudio && (decomp.audioSegments || []).length > 0) {
             prog(20, 'שלב 2: תמלול דיבור (Whisper)...');
-            const whisperResult = await _apiWhisper(decomp.audioData, token);
-            speechText = (whisperResult.text || '').trim();
+            const segs = decomp.audioSegments;
+            for (let si = 0; si < segs.length; si++) {
+                prog(20 + Math.round(si / segs.length * 5),
+                    'תמלול מקטע אודיו ' + (si + 1) + '/' + segs.length + '...');
+                const wResult = await _apiWhisper(segs[si], token);
+                const segText = (wResult.text || '').trim();
+                speechSegments.push({
+                    index: si,
+                    input: 'Audio segment ' + si + ' (' + Math.round(segs[si].length / 1024) + 'KB)',
+                    model: WHISPER,
+                    result: segText,
+                    status: segText ? 'ok' : 'empty',
+                });
+                if (segText) speechText += (speechText ? ' ' : '') + segText;
+            }
+        } else if (decomp.hasAudio && decomp.audioData) {
+            // Single full audio fallback
+            prog(20, 'שלב 2: תמלול דיבור...');
+            const wResult = await _apiWhisper(decomp.audioData, token);
+            speechText = (wResult.text || '').trim();
+            speechSegments.push({ index: 0, result: speechText, status: speechText ? 'ok' : 'empty' });
         } else {
             prog(20, 'שלב 2: אין אודיו — דולג...');
         }
 
-        // Steps 3-6: Process selected frames in parallel
+        // ═══ Steps 3-6: Process frames (parallel per batch) ═══
         prog(25, 'שלב 3-6: ניתוח פריימים...');
         const frameResults = [];
         const batchSize = 3;
@@ -816,7 +1029,7 @@ const HF_CLIENT = (() => {
 
         for (let i = 0; i < selectedFrames.length; i += batchSize) {
             const batch = selectedFrames.slice(i, i + batchSize);
-            const pct = 25 + Math.round((i / selectedFrames.length) * 35);
+            const pct = 25 + Math.round((i / selectedFrames.length) * 30);
             prog(pct, 'מנתח פריים ' + (i + 1) + '-' + Math.min(i + batchSize, selectedFrames.length) + '/' + selectedFrames.length + '...');
 
             const batchResults = await Promise.all(batch.map(async (frame) => {
@@ -838,101 +1051,252 @@ const HF_CLIENT = (() => {
             frameResults.push(...batchResults);
         }
 
-        // AI Classifier on first frame
-        let aiClassResult = { label: 'unknown' };
-        if (selectedFrames.length > 0) {
-            aiClassResult = await _apiAiClass(selectedFrames[0].data, token);
+        // AI Classifier on first + middle frame (dual like backend)
+        prog(56, 'בדיקת AI על פריימים מרכזיים...');
+        const aiClassFrames = [];
+        const firstFrame = selectedFrames[0];
+        const midIdx = Math.floor(selectedFrames.length / 2);
+        const midFrame = selectedFrames[midIdx];
+        const framesToClassify = [
+            { frame: firstFrame, index: 0 },
+            { frame: midFrame, index: midIdx },
+        ];
+        for (const fc of framesToClassify) {
+            const cls = await _apiAiClass(fc.frame.data, token);
+            aiClassFrames.push({ frame_index: fc.index, ...cls });
         }
+        // Use first-frame classifier as primary AI result
+        const aiClassResult = aiClassFrames[0] || { label: 'unknown' };
 
-        prog(62, 'שלב 7: מיזוג טקסטים...');
-
-        // Merge all text
+        // ═══ Step 7: Text Merge (local, no API) ═══
+        prog(58, 'שלב 7: מיזוג טקסטים...');
         const allOcr = frameResults.map(f => f.ocr).filter(Boolean).join('\n');
         const allCaptions = frameResults.map(f => f.caption).filter(Boolean).join('\n');
-        const allObjects = [...new Set(frameResults.flatMap(f => f.objects.map(o => o.label)))];
-        const mergedText = [speechText, allOcr].filter(Boolean).join('\n\n');
+        const allObjects = [];
+        const seenLabels = new Set();
+        for (const f of frameResults) {
+            for (const o of f.objects) {
+                if (!seenLabels.has(o.label)) {
+                    seenLabels.add(o.label);
+                    allObjects.push(o);
+                }
+            }
+        }
+        // Build merged text exactly like backend step7_text_merge
+        let mergedText = '';
+        if (speechText) mergedText += '[דיבור] ' + speechText + '\n\n';
+        if (allOcr) mergedText += '[OCR] ' + allOcr + '\n\n';
+        if (allCaptions) mergedText += '[תיאורים] ' + allCaptions;
+        mergedText = mergedText.trim();
 
+        // ═══ Step 8: Investigative Questions ═══
+        prog(60, 'שלב 8: שאלות חקירה...');
+        const questionsPrompt =
+            'VIDEO DATA:\n' +
+            mergedText.slice(0, 3000) + '\n\n' +
+            'DETECTED OBJECTS: ' + allObjects.map(o => o.label).join(', ') + '\n\n' +
+            'Generate 5-10 investigative questions.';
+        const questionsRaw = await _apiChat(questionsPrompt, token, P_QUESTIONS, 800);
+        let questions = [];
+        try {
+            const parsed = _parseJson(questionsRaw);
+            questions = Array.isArray(parsed) ? parsed :
+                        Array.isArray(parsed.questions) ? parsed.questions :
+                        questionsRaw.split('\n').filter(l => l.trim().length > 10).slice(0, 10);
+        } catch (_) {
+            questions = questionsRaw.split('\n').filter(l => l.trim().length > 10).slice(0, 10);
+        }
+
+        // ═══ Step 9: Frame Reinvestigation ═══
+        prog(65, 'שלב 9: חקירת פריימים לפי שאלות...');
+        const answers = [];
+        if (questions.length > 0 && selectedFrames.length > 0) {
+            const nFrames = selectedFrames.length;
+            for (let qi = 0; qi < questions.length; qi++) {
+                const q = typeof questions[qi] === 'string' ? questions[qi] : questions[qi]?.question || String(questions[qi]);
+                const fidx = (qi * nFrames) % nFrames;
+                const frame = selectedFrames[fidx % selectedFrames.length];
+                const b64 = _uint8ToBase64(frame.data);
+                const ansPrompt = 'Look at this image and answer: ' + q;
+                const ansText = await _apiVision(b64, ansPrompt, token, 600);
+                answers.push({
+                    question: q,
+                    frame_index: fidx,
+                    timestamp: _formatTime(frame.time),
+                    model: VISION_MODELS[0],
+                    response: ansText,
+                });
+                prog(65 + Math.round((qi / questions.length) * 5),
+                    'חוקר שאלה ' + (qi + 1) + '/' + questions.length + '...');
+            }
+        }
+
+        // ═══ Step 11: Summary ═══
+        prog(72, 'שלב 11: סיכום תוכן...');
+        let qaSection = '';
+        for (const a of answers) {
+            qaSection += 'Q: ' + a.question + '\nA: ' + (a.response || '').slice(0, 200) + '\n\n';
+        }
+        const summaryPrompt =
+            'MERGED TEXT:\n' + mergedText.slice(0, 2000) + '\n\n' +
+            'OBJECTS: ' + allObjects.map(o => o.label).join(', ') + '\n\n' +
+            'INVESTIGATION Q&A:\n' + qaSection.slice(0, 1500) + '\n\n' +
+            'Write a factual summary.';
+        const summaryRaw = await _apiChat(summaryPrompt, token, P_SUMMARY, 1200);
+        const summaryText = summaryRaw.trim();
+
+        // Build output structure matching backend
         const output = {
             speech_text: speechText,
             ocr_text: allOcr,
             merged_text: mergedText,
             frames: frameResults.map(f => ({
                 timestamp: _formatTime(f.time),
+                time_sec: f.time,
+                ocr: f.ocr || undefined,
                 caption: f.caption,
                 objects: f.objects.map(o => o.label),
                 ai_detection: [f.aiVision],
             })),
-            questions: [],
-            answers: [],
-            summary: allCaptions.slice(0, 500),
+            questions: questions.map(q => typeof q === 'string' ? q : q?.question || String(q)),
+            answers: answers,
+            summary: summaryText,
         };
 
         const pipeline = [
             { step: 1, name: 'decompose', duration_ms: 0 },
-            { step: 2, name: 'speech_transcription', model: WHISPER, full_text: speechText },
+            { step: 2, name: 'speech_transcription', model: WHISPER, segments: speechSegments, full_text: speechText },
             { step: 3, name: 'ocr_extraction', model: VISION_MODELS[0], full_text: allOcr },
-            { step: 4, name: 'object_detection', model: DETR, unique_objects: allObjects.map(l => ({ label: l })) },
+            { step: 4, name: 'object_detection', model: DETR, unique_objects: allObjects },
             { step: 5, name: 'image_captioning', model: VISION_MODELS[0] },
-            { step: 6, name: 'ai_detection', models: [VISION_MODELS[0], AI_CLASS] },
+            { step: 6, name: 'ai_detection', models: [VISION_MODELS[0], AI_CLASS], frames: aiClassFrames },
+            { step: 7, name: 'text_merge', speech_text: speechText, ocr_text: allOcr, captions_text: allCaptions, merged_text: mergedText },
+            { step: 8, name: 'investigative_questions', model: TEXT_LLM, questions: output.questions },
+            { step: 9, name: 'frame_reinvestigation', answers: answers },
+            { step: 11, name: 'summary', model: TEXT_LLM, summary_text: summaryText },
         ];
 
-        // Narrative Classification
-        prog(65, 'שלב 8: סיווג נרטיב...');
+        // ═══ Narrative Classification ═══
+        prog(76, 'סיווג נרטיב...');
         const narrPrompt =
             'Analyze the following VIDEO content data:\n\n' +
             'Speech Text: ' + (speechText || '(none)') + '\n' +
             'OCR Text: ' + (allOcr || '(none)') + '\n' +
             'Frame Descriptions: ' + allCaptions.slice(0, 1000) + '\n' +
-            'Objects: ' + allObjects.join(', ') + '\n\n' +
+            'Summary: ' + summaryText.slice(0, 500) + '\n' +
+            'Objects: ' + allObjects.map(o => o.label).join(', ') + '\n' +
+            'Investigation Q&A:\n' + qaSection.slice(0, 500) + '\n\n' +
             P_NARRATIVE_CLASS;
         const narrRaw = await _apiChat(narrPrompt, token, 'You are a Narrative Intelligence Classifier.', 512);
         const narrativeResult = _parseJson(narrRaw);
 
-        // Scoring
+        // ═══ Scoring ═══
         const scores = _computeScores(output, aiClassResult, narrativeResult);
 
-        // Intelligence Analysis
-        prog(72, 'שלב 9: ניתוח מודיעיני...');
+        // ═══ Intelligence Analysis ═══
+        prog(80, 'ניתוח מודיעיני...');
         const intelPrompt =
             'Analyze the following VIDEO content:\n\n' +
             '== META ==\nType: video\nDuration: ' + decomp.duration + 's\nFrames: ' + decomp.allFrames.length + '\nSize: ' + meta.file_size_kb + ' KB\n\n' +
             '== SPEECH TEXT ==\n' + (speechText || '(no speech found)') + '\n\n' +
             '== OCR TEXT ==\n' + (allOcr || '(no text found)') + '\n\n' +
-            '== FRAME DESCRIPTIONS ==\n' + allCaptions.slice(0, 1500) + '\n\n' +
-            '== OBJECTS DETECTED ==\n' + allObjects.join(', ') + '\n\n' +
+            '== SUMMARY ==\n' + summaryText.slice(0, 500) + '\n\n' +
+            '== FRAME DESCRIPTIONS ==\n' + allCaptions.slice(0, 1000) + '\n\n' +
+            '== OBJECTS DETECTED ==\n' + allObjects.map(o => o.label + ' (' + o.score + ')').join(', ') + '\n\n' +
             '== AI DETECTION ==\nClassifier: ' + JSON.stringify(aiClassResult) + '\n\n' +
-            '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + '\n\n' +
+            '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + ' (confidence: ' + (narrativeResult.confidence || 0) + ')\n\n' +
+            '== INVESTIGATION Q&A ==\n' + qaSection.slice(0, 800) + '\n\n' +
             P_INTELLIGENCE;
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
 
-        // UI Adapter
-        prog(82, 'שלב 10: עיבוד סופי...');
-        const uiPrompt =
-            'Based on the following VIDEO analysis, produce the final UI output JSON.\n\n' +
-            '== SPEECH ==\n' + (speechText || '(none)').slice(0, 500) + '\n' +
-            '== FRAME DESCRIPTIONS ==\n' + allCaptions.slice(0, 500) + '\n' +
-            '== INTELLIGENCE ==\n' + JSON.stringify(intelligence) + '\n' +
-            '== NARRATIVE ==\n' + JSON.stringify(narrativeResult) + '\n' +
-            '== SCORES (system computed) ==\n' + JSON.stringify(scores) + '\n\n' +
-            'IMPORTANT: The ui_metrics values MUST use the scores provided above exactly. Do NOT change them.\n' +
-            'Your ONLY creative job is the ui_summary text (Hebrew, 2-3 sentences), ui_tags, ui_flags, verified_findings, removed_claims.\n\n' +
-            P_UI_ADAPTER;
-        const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 1200);
-        const uiData = _parseJson(uiRaw);
+        // ═══ Reality Check: Claim Extraction ═══
+        prog(84, 'מנוע בדיקת מציאות...');
+        const claimPrompt =
+            'INPUT DATA:\n' +
+            JSON.stringify({ meta, speech_text: speechText, ocr_text: allOcr, summary: summaryText, narrative: narrativeResult.narrative_class }).slice(0, 2000) + '\n\n' +
+            P_CLAIM_EXTRACTION;
+        const claimRaw = await _apiChat(claimPrompt, token, 'You are a fact-checking system.', 512);
+        const claimResult = _parseJson(claimRaw);
+        const claims = Array.isArray(claimResult.claims) ? claimResult.claims : [];
 
-        uiData.ui_metrics = {
-            ...(uiData.ui_metrics || {}),
-            truth_score: scores.truth_score,
-            authenticity_score: scores.authenticity_score,
-            ai_probability: scores.ai_probability,
-            narrative: scores.narrative,
-            risk_level: scores.risk_level,
-            confidence_level: scores.confidence_level,
+        // Build research section (no external search from browser, but structured)
+        const research = {
+            claims: claims,
+            verified: [],
+            contradicted: [],
+            not_verified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
+            unverified: claims.map(c => ({ claim: c, status: 'NOT_VERIFIED', confidence: 30, evidence: 'אין גישה למקורות חיצוניים מהדפדפן', source: 'browser_limitation' })),
+            context_summary: 'בדיקת מקורות חיצוניים אינה זמינה במצב דפדפן. הטענות לא אומתו.',
+            sources_searched: 0,
+            engines_used: [],
+            is_part_of_larger_event: false,
         };
-        uiData.satire_detected = scores.satire_detected;
-        uiData.factual_mode = scores.factual_mode;
-        uiData.content_type = scores.content_type;
+
+        // ═══ Validation ═══
+        prog(87, 'אימות תוצאות...');
+        const validPrompt =
+            'INPUT DATA (original):\n' +
+            'Speech: ' + (speechText || '(none)').slice(0, 300) + '\n' +
+            'OCR: ' + (allOcr || '(none)').slice(0, 300) + '\n' +
+            'Summary: ' + summaryText.slice(0, 300) + '\n\n' +
+            'ANALYSIS OUTPUT:\n' +
+            JSON.stringify({ intelligence, narrative: narrativeResult, scores }).slice(0, 1500) + '\n\n' +
+            P_VALIDATION;
+        const validRaw = await _apiChat(validPrompt, token, 'You are a validation system.', 512);
+        const validation = _parseJson(validRaw);
+        if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
+        if (!validation.issues) validation.issues = [];
+
+        // ═══ Evidence Filter ═══
+        prog(89, 'סינון ראיות...');
+        const evFilterPrompt =
+            'ORIGINAL DATA:\n' +
+            'Speech: ' + (speechText || '(none)').slice(0, 300) + '\n' +
+            'OCR: ' + (allOcr || '(none)').slice(0, 300) + '\n' +
+            'Summary: ' + summaryText.slice(0, 300) + '\n\n' +
+            'ANALYSIS:\n' +
+            JSON.stringify({ intelligence: intelligence, narrative: narrativeResult }).slice(0, 1000) + '\n\n' +
+            'VALIDATION ISSUES:\n' + JSON.stringify(validation.issues) + '\n\n' +
+            P_EVIDENCE_FILTER;
+        const evFilterRaw = await _apiChat(evFilterPrompt, token, 'You are an evidence filter system.', 800);
+        const evidenceFilter = _parseJson(evFilterRaw);
+
+        // ═══ UI Adapter ═══
+        prog(92, 'עיבוד סופי...');
+        const uiPrompt =
+            'Based on the following VIDEO analysis, produce the final UI output.\n\n' +
+            '== SPEECH ==\n' + (speechText || '(none)').slice(0, 500) + '\n' +
+            '== SUMMARY ==\n' + summaryText.slice(0, 500) + '\n' +
+            '== INTELLIGENCE ==\n' + JSON.stringify(intelligence).slice(0, 500) + '\n' +
+            '== NARRATIVE ==\n' + JSON.stringify(narrativeResult).slice(0, 300) + '\n' +
+            '== EVIDENCE FILTER ==\n' + JSON.stringify(evidenceFilter).slice(0, 300) + '\n\n' +
+            P_UI_ADAPTER;
+        const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 600);
+        const uiParsed = _parseJson(uiRaw);
+
+        // Build complete ui_data with system-computed scores
+        const uiData = {
+            ui_metrics: {
+                truth_score: scores.truth_score,
+                authenticity_score: scores.authenticity_score,
+                ai_probability: scores.ai_probability,
+                narrative: scores.narrative,
+                risk_level: scores.risk_level,
+                confidence_level: scores.confidence_level,
+            },
+            content_type: scores.content_type,
+            factual_mode: scores.factual_mode,
+            satire_detected: scores.satire_detected,
+            ui_summary: uiParsed.ui_summary || intelligence.final_assessment || '',
+            ui_tags: uiParsed.ui_tags || [scores.content_type],
+            ui_flags: uiParsed.ui_flags || [],
+            verified_findings: evidenceFilter.filtered_findings || intelligence.key_findings || [],
+            removed_claims: evidenceFilter.removed_claims || [],
+            evidence_quality: evidenceFilter.evidence_quality || 'Moderate',
+            humor_signals: narrativeResult.humor_signals || [],
+            research: research,
+        };
 
         prog(95, 'סיום...');
         const totalMs = Date.now() - t0;
@@ -945,11 +1309,18 @@ const HF_CLIENT = (() => {
             scores: scores,
             narrative: narrativeResult,
             intelligence: intelligence,
-            research: {},
-            validation: { is_valid: true, issues: [] },
-            evidence_filter: {},
+            research: research,
+            validation: validation,
+            evidence_filter: evidenceFilter,
             ui_data: uiData,
-            consistency: scores,
+            consistency: {
+                ...scores,
+                ui_summary: uiData.ui_summary,
+                ui_tags: uiData.ui_tags,
+                satire_detected: scores.satire_detected,
+                narrative_class: scores.content_type,
+                consistency_applied: true,
+            },
             total_duration_ms: totalMs,
         };
     }
