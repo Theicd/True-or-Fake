@@ -333,6 +333,30 @@ const HF_CLIENT = (() => {
             if (braceMatch) {
                 try { return JSON.parse(braceMatch[0]); } catch (_) {}
             }
+            // Fallback: extract individual fields from truncated JSON via regex
+            const result = {};
+            const strFields = ['narrative_class', 'content_type', 'risk_override', 'final_assessment'];
+            const numFields = ['confidence'];
+            const boolFields = ['absurdity_detected', 'is_valid'];
+            for (const f of strFields) {
+                const sm = raw.match(new RegExp('"' + f + '"\\s*:\\s*"([^"]*?)"'));
+                if (sm) result[f] = sm[1];
+            }
+            for (const f of numFields) {
+                const nm = raw.match(new RegExp('"' + f + '"\\s*:\\s*([\\d.]+)'));
+                if (nm) result[f] = parseFloat(nm[1]);
+            }
+            for (const f of boolFields) {
+                const bm = raw.match(new RegExp('"' + f + '"\\s*:\\s*(true|false)'));
+                if (bm) result[f] = bm[1] === 'true';
+            }
+            // Try to extract humor_signals array
+            const arrM = raw.match(/"humor_signals"\s*:\s*\[([^\]]*)/);
+            if (arrM) {
+                const items = arrM[1].match(/"([^"]*)"/g);
+                if (items) result.humor_signals = items.map(s => s.replace(/"/g, ''));
+            }
+            if (Object.keys(result).length > 0) return result;
             return {};
         }
     }
@@ -540,13 +564,13 @@ const HF_CLIENT = (() => {
             'AI Vision: ' + aivR + '\n\n' +
             P_NARRATIVE_CLASS;
 
-        const narrRaw = await _apiChat(narrPrompt, token, 'You are a Narrative Intelligence Classifier.', 512);
+        const narrRaw = await _apiChat(narrPrompt, token, 'You are a Narrative Intelligence Classifier.', 1024);
         const narrativeResult = _parseJson(narrRaw);
 
         prog(50, 'שלב 6: ניתוח מודיעיני...');
 
         // ── Scoring ──
-        const scores = _computeScores(output, aicR, narrativeResult);
+        let scores = _computeScores(output, aicR, narrativeResult);
 
         // ── Intelligence Analysis ──
         const intelPrompt =
@@ -561,6 +585,19 @@ const HF_CLIENT = (() => {
 
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
+
+        // ── Intelligence Reconciliation ──
+        const _narrClassImg = (narrativeResult.narrative_class || '').toLowerCase();
+        const _intelTypeImg = (intelligence.content_type || '').toLowerCase();
+        if ((!_narrClassImg || _narrClassImg === 'unclear') && _intelTypeImg) {
+            const _typeMapImg = { misinformation: 'Misinformation', propaganda: 'Propaganda', satire: 'Satire', factual: 'Factual', fiction: 'Fiction' };
+            const mappedImg = _typeMapImg[_intelTypeImg];
+            if (mappedImg) {
+                narrativeResult.narrative_class = mappedImg;
+                if (!narrativeResult.confidence) narrativeResult.confidence = 0.5;
+                scores = _computeScores(output, aicR, narrativeResult);
+            }
+        }
 
         // ── Validation ──
         prog(70, 'אימות תוצאות...');
@@ -1234,11 +1271,11 @@ const HF_CLIENT = (() => {
             'Objects: ' + allObjects.map(o => o.label).join(', ') + '\n' +
             'Investigation Q&A:\n' + qaSection.slice(0, 500) + '\n\n' +
             P_NARRATIVE_CLASS;
-        const narrRaw = await _apiChat(narrPrompt, token, 'You are a Narrative Intelligence Classifier.', 512);
+        const narrRaw = await _apiChat(narrPrompt, token, 'You are a Narrative Intelligence Classifier.', 1024);
         const narrativeResult = _parseJson(narrRaw);
 
         // ═══ Scoring ═══
-        const scores = _computeScores(output, aiClassResult, narrativeResult);
+        let scores = _computeScores(output, aiClassResult, narrativeResult);
 
         // ═══ Intelligence Analysis ═══
         prog(80, 'ניתוח מודיעיני...');
@@ -1256,6 +1293,20 @@ const HF_CLIENT = (() => {
             P_INTELLIGENCE;
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
+
+        // ═══ Intelligence Reconciliation ═══
+        // If narrative classifier failed or returned 'Unclear', use intelligence content_type
+        const _narrClass = (narrativeResult.narrative_class || '').toLowerCase();
+        const _intelType = (intelligence.content_type || '').toLowerCase();
+        if ((!_narrClass || _narrClass === 'unclear') && _intelType) {
+            const _typeMap = { misinformation: 'Misinformation', propaganda: 'Propaganda', satire: 'Satire', factual: 'Factual', fiction: 'Fiction' };
+            const mapped = _typeMap[_intelType];
+            if (mapped) {
+                narrativeResult.narrative_class = mapped;
+                if (!narrativeResult.confidence) narrativeResult.confidence = 0.5;
+                scores = _computeScores(output, aiClassResult, narrativeResult);
+            }
+        }
 
         // ═══ Validation ═══
         prog(85, 'אימות תוצאות...');
