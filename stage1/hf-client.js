@@ -686,6 +686,10 @@ const HF_CLIENT = (() => {
 
     async function _loadFFmpeg(prog) {
         if (_ffmpeg) return _ffmpeg;
+        // ffmpeg.wasm requires SharedArrayBuffer (COOP/COEP headers)
+        if (typeof SharedArrayBuffer === 'undefined') {
+            throw new Error('SharedArrayBuffer not available');
+        }
         prog(2, 'טוען FFmpeg לדפדפן...');
 
         // Load ffmpeg.wasm from CDN
@@ -861,9 +865,10 @@ const HF_CLIENT = (() => {
         };
     }
 
-    // Fallback: extract a single frame using <video> + <canvas>
+    // Fallback: extract frames via <video>+<canvas>, audio via Web Audio API
     async function _fallbackDecompose(videoFile, prog) {
-        return new Promise((resolve) => {
+        // ── Frame extraction ──
+        const frameResult = await new Promise((resolve) => {
             const url = URL.createObjectURL(videoFile);
             const video = document.createElement('video');
             video.muted = true;
@@ -886,13 +891,7 @@ const HF_CLIENT = (() => {
                 function grabNext() {
                     if (idx >= times.length) {
                         URL.revokeObjectURL(url);
-                        resolve({
-                            duration: duration,
-                            hasAudio: false,
-                            audioData: null,
-                            allFrames: frames,
-                            selectedFrames: frames,
-                        });
+                        resolve({ duration: duration, frames: frames });
                         return;
                     }
                     video.currentTime = times[idx];
@@ -922,11 +921,91 @@ const HF_CLIENT = (() => {
 
             video.onerror = () => {
                 URL.revokeObjectURL(url);
-                resolve({ duration: 0, hasAudio: false, audioData: null, allFrames: [], selectedFrames: [] });
+                resolve({ duration: 0, frames: [] });
             };
 
             video.src = url;
         });
+
+        // ── Audio extraction via Web Audio API ──
+        let audioData = null;
+        let audioSegments = [];
+        try {
+            prog(20, 'מחלץ אודיו (Web Audio)...');
+            const arrayBuf = await videoFile.arrayBuffer();
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let decoded;
+            try {
+                decoded = await audioCtx.decodeAudioData(arrayBuf.slice(0));
+            } catch (_) {
+                await audioCtx.close();
+                decoded = null;
+            }
+            if (decoded) {
+                await audioCtx.close();
+                const targetRate = 16000;
+                const totalSamples = Math.ceil(decoded.duration * targetRate);
+                if (totalSamples >= 800) {
+                    const offCtx = new OfflineAudioContext(1, totalSamples, targetRate);
+                    const src = offCtx.createBufferSource();
+                    src.buffer = decoded;
+                    src.connect(offCtx.destination);
+                    src.start(0);
+                    const resampled = await offCtx.startRendering();
+                    const pcm = resampled.getChannelData(0);
+
+                    function buildWav(samples) {
+                        const buf = new ArrayBuffer(44 + samples.length * 2);
+                        const dv = new DataView(buf);
+                        const w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+                        w(0, 'RIFF');
+                        dv.setUint32(4, 36 + samples.length * 2, true);
+                        w(8, 'WAVE');
+                        w(12, 'fmt ');
+                        dv.setUint32(16, 16, true);
+                        dv.setUint16(20, 1, true);
+                        dv.setUint16(22, 1, true);
+                        dv.setUint32(24, targetRate, true);
+                        dv.setUint32(28, targetRate * 2, true);
+                        dv.setUint16(32, 2, true);
+                        dv.setUint16(34, 16, true);
+                        w(36, 'data');
+                        dv.setUint32(40, samples.length * 2, true);
+                        let off = 44;
+                        for (let i = 0; i < samples.length; i++) {
+                            const s = Math.max(-1, Math.min(1, samples[i]));
+                            dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                            off += 2;
+                        }
+                        return new Uint8Array(buf);
+                    }
+
+                    audioData = buildWav(pcm);
+                    // Segment into ~15s WAV chunks for Whisper
+                    const segSamples = 15 * targetRate;
+                    for (let i = 0; i < pcm.length; i += segSamples) {
+                        const chunk = pcm.subarray(i, Math.min(i + segSamples, pcm.length));
+                        if (chunk.length >= 800) {
+                            audioSegments.push(buildWav(chunk));
+                        }
+                    }
+                    if (audioSegments.length === 0 && audioData) audioSegments = [audioData];
+                    prog(22, 'אודיו חולץ (' + audioSegments.length + ' מקטעים)...');
+                }
+            }
+        } catch (_) {
+            audioData = null;
+            audioSegments = [];
+        }
+
+        return {
+            duration: frameResult.duration,
+            hasAudio: !!audioData,
+            audioData: audioData,
+            audioSegments: audioSegments,
+            allFrames: frameResult.frames,
+            selectedFrames: frameResult.frames,
+        };
     }
 
     // ═══════════════════════════════════════════════════
