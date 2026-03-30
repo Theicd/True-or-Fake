@@ -959,8 +959,50 @@ function showSelectedFile(file) {
     window.__file = file;
     const sf = $('selectedFile');
     const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-    sf.textContent = '📎 ' + file.name + ' (' + sizeMB + ' MB)';
-    sf.classList.remove('hidden');
+    const isHe = currentLang === 'he';
+    // מגבלת גודל קובץ
+    if (file.size > 50 * 1024 * 1024) {
+        alert(isHe ? 'הקובץ גדול מהמותר (50MB)' : 'File exceeds 50MB limit');
+        sf.textContent = '';
+        sf.classList.add('hidden');
+        window.__file = null;
+        return;
+    }
+    // בדיקת אורך וידאו (אם רלוונטי)
+    if (file.type && file.type.startsWith('video/')) {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = function() {
+            URL.revokeObjectURL(url);
+            const duration = video.duration;
+            if (duration > 120) {
+                alert(isHe ? 'הסרטון ארוך מהמותר (120 שניות)' : 'Video exceeds 120 seconds limit');
+                sf.textContent = '';
+                sf.classList.add('hidden');
+                window.__file = null;
+                return;
+            }
+            // הערכת זמן עיבוד
+            let est = '';
+            if (duration <= 30) est = isHe ? 'העיבוד צפוי להימשך כחצי דקה' : 'Estimated processing: ~30 seconds';
+            else if (duration <= 60) est = isHe ? 'העיבוד צפוי להימשך כדקה' : 'Estimated processing: ~1 minute';
+            else if (duration <= 90) est = isHe ? 'העיבוד צפוי להימשך כשתי דקות' : 'Estimated processing: ~2 minutes';
+            else est = isHe ? 'העיבוד צפוי להימשך 2-3 דקות' : 'Estimated processing: 2-3 minutes';
+            sf.textContent = '📎 ' + file.name + ' (' + sizeMB + ' MB, ' + Math.round(duration) + ' שניות) — ' + est;
+            sf.classList.remove('hidden');
+        };
+        video.onerror = function() {
+            alert(isHe ? 'שגיאה בקריאת קובץ וידאו' : 'Error reading video file');
+            sf.textContent = '';
+            sf.classList.add('hidden');
+            window.__file = null;
+        };
+        video.src = url;
+    } else {
+        sf.textContent = '📎 ' + file.name + ' (' + sizeMB + ' MB)';
+        sf.classList.remove('hidden');
+    }
 }
 
 // ═══════════════════════════════════════════════
@@ -1042,6 +1084,22 @@ async function startAnalysis() {
     if (!file && !url) {
         alert(isHe ? 'נא לבחור קובץ או להכניס URL' : 'Please select a file or enter a URL');
         return;
+    }
+    // בדיקת מגבלות לפני עיבוד
+    if (file) {
+        if (file.size > 50 * 1024 * 1024) {
+            alert(isHe ? 'הקובץ גדול מהמותר (50MB)' : 'File exceeds 50MB limit');
+            return;
+        }
+        if (file.type && file.type.startsWith('video/')) {
+            // נבדוק אם שמרנו את האורך בזיכרון (window.__videoDuration)
+            if (typeof window.__videoDuration === 'number') {
+                if (window.__videoDuration > 120) {
+                    alert(isHe ? 'הסרטון ארוך מהמותר (120 שניות)' : 'Video exceeds 120 seconds limit');
+                    return;
+                }
+            }
+        }
     }
 
     $('btnGo').disabled = true;
