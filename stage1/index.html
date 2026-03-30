@@ -63,6 +63,13 @@
             <div class="auth-icon">🔑</div>
             <p class="auth-desc" data-he="הכנס מפתח HuggingFace API" data-en="Enter your HuggingFace API key">הכנס מפתח HuggingFace API</p>
             <input type="text" id="token" class="input-field" placeholder="hf_..." autocomplete="off" dir="ltr" spellcheck="false">
+            <details class="api-base-wrap" id="apiBaseDetails">
+                <summary class="api-base-toggle" data-he="⚙️ הגדרות מתקדמות (שרת חיצוני)" data-en="⚙️ Advanced (external server)">⚙️ הגדרות מתקדמות (שרת חיצוני)</summary>
+                <p class="auth-desc api-base-hint" data-he="אופציונלי — רק אם יש לך שרת ניתוח משלך" data-en="Optional — only if you have your own analysis server">אופציונלי — רק אם יש לך שרת ניתוח משלך</p>
+                <input type="text" id="apiBase" class="input-field" placeholder="https://your-server.example.com" autocomplete="off" dir="ltr" spellcheck="false">
+                <button class="btn-outline btn-api-base" id="btnSaveApiBase" data-he="שמור כתובת שרת" data-en="Save Server URL">שמור כתובת שרת</button>
+                <div class="auth-status" id="apiBaseStatus"></div>
+            </details>
             <button class="btn-primary" id="btnVerify" data-he="אמת והתחבר" data-en="Verify & Connect">אמת והתחבר</button>
             <div class="auth-status" id="tokenStatus"></div>
             <p class="auth-hint" data-he="מפתח חינמי מ-huggingface.co/settings/tokens" data-en="Free key from huggingface.co/settings/tokens">מפתח חינמי מ-huggingface.co/settings/tokens</p>
@@ -422,6 +429,7 @@
 <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.7.2/lib/nostr.bundle.min.js" defer></script>
 <script src="./network-config.js" defer></script>
 <script src="./decentralized.js" defer></script>
+<script src="./hf-client.js" defer></script>
 <script src="./app.js" defer></script>
 </body>
 </html>

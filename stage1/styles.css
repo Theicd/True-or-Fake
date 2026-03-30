@@ -314,6 +314,13 @@ html[dir="ltr"] .modal-close{left:auto;right:10px}
 .auth-status.err{color:#ef4444}
 .auth-status.wait{color:#f59e0b}
 .auth-hint{color:#374151;font-size:.7rem;margin-top:8px}
+.api-base-wrap{margin:10px 0 4px}
+.api-base-wrap summary{cursor:pointer;color:#6b7d94;font-size:.78rem;padding:6px 0;list-style:none}
+.api-base-wrap summary::-webkit-details-marker{display:none}
+.api-base-wrap summary::before{content:'▸ ';transition:transform .2s}
+.api-base-wrap[open] summary::before{content:'▾ '}
+.api-base-hint{font-size:.72rem;color:#6b7d94;margin:4px 0}
+.btn-api-base{margin-top:8px;width:100%}
 
 /* ═══════════════════════════════════════════════
    GUIDED TOUR — סיור מודרך (פרימיום)

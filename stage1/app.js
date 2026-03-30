@@ -9,6 +9,67 @@ let currentLang = 'he';
 let tokenVerified = false;
 let currentScreen = 'history';
 
+const API_BASE_KEY = 'tof_api_base';
+const API_BASE_HINT = 'api_base';
+
+function _isGithubPagesHost() {
+    const host = (window.location.hostname || '').toLowerCase();
+    return host.endsWith('github.io');
+}
+
+function _normalizeApiBase(raw) {
+    const v = String(raw || '').trim();
+    if (!v) return '';
+    return v.replace(/\/+$/, '');
+}
+
+function getApiBase() {
+    const qp = new URLSearchParams(window.location.search).get(API_BASE_HINT);
+    if (qp) {
+        const fromQuery = _normalizeApiBase(qp);
+        if (fromQuery) {
+            localStorage.setItem(API_BASE_KEY, fromQuery);
+            return fromQuery;
+        }
+    }
+
+    const fromStorage = _normalizeApiBase(localStorage.getItem(API_BASE_KEY) || '');
+    if (fromStorage) return fromStorage;
+
+    if (_isGithubPagesHost()) {
+        const fromGlobal = _normalizeApiBase(window.TOF_API_BASE || '');
+        if (fromGlobal) {
+            localStorage.setItem(API_BASE_KEY, fromGlobal);
+            return fromGlobal;
+        }
+    }
+    return '';
+}
+
+function apiUrl(path) {
+    const base = getApiBase();
+    return base ? `${base}${path}` : path;
+}
+
+function apiFetch(path, options) {
+    return fetch(apiUrl(path), options);
+}
+
+function apiHelpMessage(isHe) {
+    return isHe
+        ? 'נדרש כתובת שרת API. פתח את האתר עם ?api_base=https://your-server.example.com או הגדר localStorage["tof_api_base"].'
+        : 'API server URL is required. Open the site with ?api_base=https://your-server.example.com or set localStorage["tof_api_base"].';
+}
+
+function _hasBackend() {
+    return !!getApiBase() || !_isGithubPagesHost();
+}
+
+function maybeWarnMissingApiBase(isHe) {
+    // No longer blocking — direct HF API mode available
+    return false;
+}
+
 // ═══════════════════════════════════════════════
 //  SHARED HISTORY ENGINE — היסטוריה משותפת מהשרת
 // ═══════════════════════════════════════════════
@@ -67,7 +128,7 @@ async function loadSharedHistory(force = false) {
     _sharedLoading = true;
     try {
         let serverHistory = [];
-        const r = await fetch('/api/reports?limit=50');
+        const r = await apiFetch('/api/reports?limit=50');
         if (r.ok) {
             const data = await r.json();
             serverHistory = data.reports || [];
@@ -94,6 +155,119 @@ function getLocalHistory() {
 function getHistory() {
     // returns cached shared history or local fallback synchronously
     return _sharedHistory || getLocalHistory();
+}
+
+function buildRelaySnapshot(data) {
+    const ui = data.ui_data || {};
+    const metrics = ui.ui_metrics || {};
+    const research = data.research || {};
+    const intel = data.intelligence || {};
+    const valid = data.validation || {};
+
+    return {
+        meta: {
+            media_type: data.meta?.media_type || 'unknown',
+            media_url: data.meta?.media_url || '',
+        },
+        ui_data: {
+            ui_metrics: {
+                truth_score: metrics.truth_score ?? 0,
+                authenticity_score: metrics.authenticity_score ?? 0,
+                ai_probability: metrics.ai_probability ?? 0,
+                narrative: metrics.narrative || 'Unclear',
+                risk_level: metrics.risk_level || 'Low',
+                confidence_level: metrics.confidence_level ?? 0,
+            },
+            ui_summary: ui.ui_summary || '',
+            ui_tags: (ui.ui_tags || []).slice(0, 8),
+            ui_flags: (ui.ui_flags || []).slice(0, 8),
+            verified_findings: (ui.verified_findings || []).slice(0, 12),
+            removed_claims: (ui.removed_claims || []).slice(0, 12),
+            content_type: ui.content_type || 'unclear',
+            factual_mode: ui.factual_mode !== false,
+        },
+        intelligence: {
+            final_assessment: intel.final_assessment || '',
+            content_type: intel.content_type || 'unclear',
+            recommended_action: intel.recommended_action || '',
+            key_signals: (intel.key_signals || []).slice(0, 8),
+            key_findings: (intel.key_findings || []).slice(0, 10),
+        },
+        validation: {
+            is_valid: valid.is_valid !== false,
+            issues: (valid.issues || []).slice(0, 10),
+        },
+        research: {
+            claims: (research.claims || []).slice(0, 10),
+            verified: (research.verified || []).slice(0, 8),
+            contradicted: (research.contradicted || []).slice(0, 8),
+            partially_verified: (research.partially_verified || []).slice(0, 8),
+            not_verified: (research.not_verified || research.unverified || []).slice(0, 8),
+            reliability: research.reliability || {},
+            context_summary: research.context_summary || '',
+        },
+        diagnostics: {
+            degraded_mode: !!(data.diagnostics && data.diagnostics.degraded_mode),
+            issues: ((data.diagnostics && data.diagnostics.issues) || []).slice(0, 8),
+        },
+        pipeline: [],
+        output: {
+            summary: data.output?.summary || ui.ui_summary || '',
+        },
+    };
+}
+
+function buildFallbackReportFromHistory(item) {
+    const isHe = currentLang === 'he';
+    const summary = item.summary || (isHe ? 'דוח מקוצר ללא נתוני שרת מלאים.' : 'Compact report without full server payload.');
+    return {
+        meta: { media_type: item.mediaType || 'unknown', degraded_fallback: true },
+        ui_data: {
+            ui_metrics: {
+                truth_score: item.truthScore ?? 0,
+                authenticity_score: item.authenticity ?? 0,
+                ai_probability: 0,
+                narrative: item.narrative || 'Unclear',
+                risk_level: item.riskLevel || 'Low',
+                confidence_level: item.confidence ?? 0,
+            },
+            ui_summary: summary,
+            ui_tags: ['history-fallback'],
+            ui_flags: [isHe ? 'דוח מקוצר' : 'Compact report'],
+            verified_findings: [],
+            removed_claims: [],
+            content_type: 'unclear',
+            factual_mode: true,
+        },
+        intelligence: {
+            final_assessment: summary,
+            content_type: item.narrative || 'Unclear',
+            key_findings: [isHe ? 'מקור הדוח נטען מהיסטוריה' : 'Report loaded from history source'],
+        },
+        validation: { is_valid: true, issues: [] },
+        research: {},
+        output: { summary },
+        diagnostics: {
+            degraded_mode: true,
+            issues: [isHe ? 'אין payload מלא לניתוח זה' : 'Full payload is unavailable for this item'],
+        },
+        pipeline: [],
+    };
+}
+
+async function resolveHistoryReport(item) {
+    if (!item) return null;
+    if (item.fullData) return item.fullData;
+    try {
+        const r = await apiFetch('/api/reports/' + item.id);
+        if (r.ok) {
+            const rd = await r.json();
+            if (rd && rd.fullData) return rd.fullData;
+        }
+    } catch (_) {
+        // fall back to compact report
+    }
+    return buildFallbackReportFromHistory(item);
 }
 
 async function saveToHistory(data, fileName, extra = {}) {
@@ -123,7 +297,7 @@ async function saveToHistory(data, fileName, extra = {}) {
     if (token) {
         try {
             // send entry JSON as request body
-            await fetch('/api/reports/save', {
+            await apiFetch('/api/reports/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...entry, hf_token_hint: token }),
@@ -147,6 +321,7 @@ async function saveToHistory(data, fileName, extra = {}) {
                 confidence: entry.confidence,
                 summary: entry.summary,
                 mediaUrl: entry.mediaUrl,
+                fullData: buildRelaySnapshot(data),
             });
             if (relayEventId) {
                 entry.relay_saved = true;
@@ -179,7 +354,7 @@ async function deleteOwnReport(reportId) {
     const token = ($('token') && $('token').value.trim()) || '';
     if (!token) { alert(currentLang === 'he' ? 'נדרש מפתח API כדי למחוק' : 'API key required to delete'); return false; }
     try {
-        const r = await fetch('/api/reports/' + reportId, {
+        const r = await apiFetch('/api/reports/' + reportId, {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer ' + token },
         });
@@ -250,14 +425,7 @@ async function renderHistory() {
         const d = new Date(heroItem.date);
         $('heroDate').textContent = d.toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
         heroCard.onclick = async () => {
-            let fd = heroItem.fullData;
-            if (!fd) {
-                // load full data from server
-                try {
-                    const r = await fetch('/api/reports/' + heroItem.id);
-                    if (r.ok) { const rd = await r.json(); fd = rd.fullData; }
-                } catch (e) { /* no full data */ }
-            }
+            const fd = await resolveHistoryReport(heroItem);
             if (fd) { renderResult(fd); showScreen('result'); }
         };
     }
@@ -303,13 +471,7 @@ async function renderHistory() {
             const idx = parseInt(card.dataset.historyIdx);
             const item = history[idx];
             if (!item) return;
-            let fd = item.fullData;
-            if (!fd) {
-                try {
-                    const r = await fetch('/api/reports/' + item.id);
-                    if (r.ok) { const rd = await r.json(); fd = rd.fullData; }
-                } catch (e) { /* no full data */ }
-            }
+            const fd = await resolveHistoryReport(item);
             if (fd) { renderResult(fd); showScreen('result'); }
         });
     });
@@ -526,6 +688,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── כפתור אימות ──
     $('btnVerify').addEventListener('click', verifyToken);
 
+    // ── API Base (ל-GitHub Pages או שרת חיצוני) ──
+    const apiInput = $('apiBase');
+    const apiBtn = $('btnSaveApiBase');
+    const apiStatus = $('apiBaseStatus');
+    if (apiInput) {
+        apiInput.value = getApiBase();
+    }
+    if (apiBtn && apiInput) {
+        apiBtn.addEventListener('click', () => {
+            const isHe = currentLang === 'he';
+            const val = _normalizeApiBase(apiInput.value || '');
+            if (!val) {
+                localStorage.removeItem(API_BASE_KEY);
+                if (apiStatus) {
+                    apiStatus.className = 'auth-status';
+                    apiStatus.textContent = isHe ? 'נמחק. במצב זה נדרש backend יחסי באותו דומיין.' : 'Cleared. Relative backend on same host is required.';
+                }
+                return;
+            }
+            localStorage.setItem(API_BASE_KEY, val);
+            if (apiStatus) {
+                apiStatus.className = 'auth-status ok';
+                apiStatus.textContent = isHe ? 'נשמר בהצלחה' : 'Saved successfully';
+            }
+        });
+    }
+
     // ── שפה ──
     $('langBtn').addEventListener('click', toggleLang);
 
@@ -707,18 +896,25 @@ async function verifyToken() {
     $('btnVerify').disabled = true;
     showStatus('tokenStatus', 'wait', isHe ? 'בודק מפתח...' : 'Checking...');
     try {
-        const fd = new FormData();
-        fd.append('hf_token', token);
-        const r = await fetch('/api/verify-token', { method: 'POST', body: fd });
-        const data = await r.json();
+        let data;
+        if (_hasBackend()) {
+            // Use backend proxy
+            const fd = new FormData();
+            fd.append('hf_token', token);
+            const r = await apiFetch('/api/verify-token', { method: 'POST', body: fd });
+            data = await r.json();
+        } else {
+            // Direct HuggingFace API (GitHub Pages mode)
+            data = await HF_CLIENT.verifyToken(token);
+        }
         if (data.ok) {
             tokenVerified = true;
             const userName = data.name || 'User';
             localStorage.setItem('hf_verified', 'true');
             localStorage.setItem('hf_user', userName);
+            localStorage.setItem('hf_token', token);
             showStatus('tokenStatus', 'ok', (isHe ? '✅ מפתח תקין — ' : '✅ Valid — ') + userName);
             updateAuthUI(true, userName);
-            // ── סגירת מודאל אוטומטית אחרי הצלחה ──
             setTimeout(closeAuthModal, 1200);
         } else {
             tokenVerified = false;
@@ -727,7 +923,7 @@ async function verifyToken() {
         }
     } catch (e) {
         tokenVerified = false;
-        showStatus('tokenStatus', 'err', isHe ? '❌ שגיאת רשת' : '❌ Network error');
+        showStatus('tokenStatus', 'err', (isHe ? '❌ שגיאת רשת: ' : '❌ Network error: ') + e.message);
     }
     $('btnVerify').disabled = false;
 }
@@ -861,6 +1057,12 @@ async function startAnalysis() {
     addLog(isHe ? 'מתחיל ניתוח: ' + label : 'Starting analysis: ' + label);
     setProgress(5, isHe ? 'מעלה מדיה...' : 'Uploading media...');
 
+    if (maybeWarnMissingApiBase(isHe)) {
+        $('btnGo').disabled = false;
+        showScreen('history');
+        return;
+    }
+
     try {
         if (file) {
             if (!net || typeof net.uploadToBlossom !== 'function') {
@@ -905,50 +1107,72 @@ async function startAnalysis() {
             }
         }
 
-        const fd = new FormData();
-        fd.append('hf_token', token);
-        if (file) fd.append('media', file);
-        else fd.append('image_url', url);
-        if (blossomUrl) fd.append('media_url', blossomUrl);
+        let data;
 
-        addLog(isHe ? 'שולח לשרת...' : 'Sending to server...');
-        setProgress(10, isHe ? 'שלב 1-2: חילוץ נתונים...' : 'Stage 1-2: extracting...');
+        if (_hasBackend()) {
+            // ── Backend mode: send to server ──
+            const fd = new FormData();
+            fd.append('hf_token', token);
+            if (file) fd.append('media', file);
+            else fd.append('image_url', url);
+            if (blossomUrl) fd.append('media_url', blossomUrl);
 
-        let fakePct = 5;
-        const shown = {};
-        const progressTimer = setInterval(() => {
-            if (fakePct < 85) {
-                const speed = fakePct < 30 ? 2 + Math.random() * 2 : fakePct < 60 ? 1 + Math.random() * 1.5 : 0.5 + Math.random();
-                fakePct = Math.min(85, fakePct + speed);
-                setProgress(fakePct);
-                // ── שלבי הפייפליין ──
-                if (fakePct > 5 && !shown.s1) { shown.s1=1; addLog(isHe ? 'פירוק וידאו לפריימים...' : 'Decomposing video...', 'ok'); }
-                if (fakePct > 10 && !shown.s2) { shown.s2=1; addLog(isHe ? 'תמלול דיבור (Whisper)...' : 'Speech (Whisper)...', 'ok'); }
-                if (fakePct > 15 && !shown.s3) { shown.s3=1; addLog(isHe ? 'חילוץ טקסט OCR...' : 'OCR...', 'ok'); }
-                if (fakePct > 19 && !shown.s4) { shown.s4=1; addLog(isHe ? 'זיהוי אובייקטים...' : 'Object detection...', 'ok'); setStatus('st-extract', true); }
-                if (fakePct > 23 && !shown.s5) { shown.s5=1; addLog(isHe ? 'תיאור תמונות...' : 'Captioning...', 'ok'); }
-                if (fakePct > 27 && !shown.s6) { shown.s6=1; addLog(isHe ? 'זיהוי תוכן AI...' : 'AI detection...', 'ok'); }
-                if (fakePct > 36 && !shown.s8) { shown.s8=1; addLog(isHe ? 'שאלות חקירה...' : 'Investigation...', 'ok'); }
-                if (fakePct > 46 && !shown.s10) { shown.s10=1; addLog(isHe ? 'סיכום...' : 'Summary...', 'ok'); }
-                if (fakePct > 51 && !shown.s11) { shown.s11=1; addLog(isHe ? 'סיווג נרטיב...' : 'Narrative...', 'ok'); setStatus('st-narrative', true); setProgress(fakePct, isHe ? 'סיווג נרטיב' : 'Narrative'); }
-                if (fakePct > 56 && !shown.s13) { shown.s13=1; addLog(isHe ? 'ניתוח מודיעיני (120B)...' : 'Intelligence (120B)...', 'ok'); setStatus('st-intel', true); }
-                if (fakePct > 58 && !shown.s13b) { shown.s13b=1; addLog(isHe ? '🔍 Reality Check — חילוץ טענות...' : '🔍 Reality Check — claims...', 'ok'); }
-                if (fakePct > 64 && !shown.s13d) { shown.s13d=1; addLog(isHe ? '🔍 חיפוש רב-מקורי...' : '🔍 Multi-source search...', 'ok'); }
-                if (fakePct > 70 && !shown.s13f) { shown.s13f=1; addLog(isHe ? '🔍 הקשר מודיעיני...' : '🔍 Context intel...', 'ok'); }
-                if (fakePct > 75 && !shown.s14) { shown.s14=1; addLog(isHe ? 'אימות תוצאות...' : 'Validation...', 'ok'); setStatus('st-valid', true); }
-                if (fakePct > 78 && !shown.s15) { shown.s15=1; addLog(isHe ? 'סינון ראיות...' : 'Evidence filter...', 'ok'); setStatus('st-evidence', true); }
-                if (fakePct > 80 && !shown.s16) { shown.s16=1; addLog(isHe ? 'מנוע עקביות...' : 'Consistency...', 'ok'); setStatus('st-consistency', true); }
-                if (fakePct > 83 && !shown.s17) { shown.s17=1; addLog(isHe ? 'עיבוד סופי...' : 'Finalizing...', 'ok'); setStatus('st-ui', true); }
+            addLog(isHe ? 'שולח לשרת...' : 'Sending to server...');
+            setProgress(10, isHe ? 'שלב 1-2: חילוץ נתונים...' : 'Stage 1-2: extracting...');
+
+            let fakePct = 5;
+            const shown = {};
+            const progressTimer = setInterval(() => {
+                if (fakePct < 85) {
+                    const speed = fakePct < 30 ? 2 + Math.random() * 2 : fakePct < 60 ? 1 + Math.random() * 1.5 : 0.5 + Math.random();
+                    fakePct = Math.min(85, fakePct + speed);
+                    setProgress(fakePct);
+                    if (fakePct > 5 && !shown.s1) { shown.s1=1; addLog(isHe ? 'פירוק וידאו לפריימים...' : 'Decomposing video...', 'ok'); }
+                    if (fakePct > 10 && !shown.s2) { shown.s2=1; addLog(isHe ? 'תמלול דיבור (Whisper)...' : 'Speech (Whisper)...', 'ok'); }
+                    if (fakePct > 15 && !shown.s3) { shown.s3=1; addLog(isHe ? 'חילוץ טקסט OCR...' : 'OCR...', 'ok'); }
+                    if (fakePct > 19 && !shown.s4) { shown.s4=1; addLog(isHe ? 'זיהוי אובייקטים...' : 'Object detection...', 'ok'); setStatus('st-extract', true); }
+                    if (fakePct > 23 && !shown.s5) { shown.s5=1; addLog(isHe ? 'תיאור תמונות...' : 'Captioning...', 'ok'); }
+                    if (fakePct > 27 && !shown.s6) { shown.s6=1; addLog(isHe ? 'זיהוי תוכן AI...' : 'AI detection...', 'ok'); }
+                    if (fakePct > 36 && !shown.s8) { shown.s8=1; addLog(isHe ? 'שאלות חקירה...' : 'Investigation...', 'ok'); }
+                    if (fakePct > 46 && !shown.s10) { shown.s10=1; addLog(isHe ? 'סיכום...' : 'Summary...', 'ok'); }
+                    if (fakePct > 51 && !shown.s11) { shown.s11=1; addLog(isHe ? 'סיווג נרטיב...' : 'Narrative...', 'ok'); setStatus('st-narrative', true); setProgress(fakePct, isHe ? 'סיווג נרטיב' : 'Narrative'); }
+                    if (fakePct > 56 && !shown.s13) { shown.s13=1; addLog(isHe ? 'ניתוח מודיעיני (120B)...' : 'Intelligence (120B)...', 'ok'); setStatus('st-intel', true); }
+                    if (fakePct > 58 && !shown.s13b) { shown.s13b=1; addLog(isHe ? '🔍 Reality Check — חילוץ טענות...' : '🔍 Reality Check — claims...', 'ok'); }
+                    if (fakePct > 64 && !shown.s13d) { shown.s13d=1; addLog(isHe ? '🔍 חיפוש רב-מקורי...' : '🔍 Multi-source search...', 'ok'); }
+                    if (fakePct > 70 && !shown.s13f) { shown.s13f=1; addLog(isHe ? '🔍 הקשר מודיעיני...' : '🔍 Context intel...', 'ok'); }
+                    if (fakePct > 75 && !shown.s14) { shown.s14=1; addLog(isHe ? 'אימות תוצאות...' : 'Validation...', 'ok'); setStatus('st-valid', true); }
+                    if (fakePct > 78 && !shown.s15) { shown.s15=1; addLog(isHe ? 'סינון ראיות...' : 'Evidence filter...', 'ok'); setStatus('st-evidence', true); }
+                    if (fakePct > 80 && !shown.s16) { shown.s16=1; addLog(isHe ? 'מנוע עקביות...' : 'Consistency...', 'ok'); setStatus('st-consistency', true); }
+                    if (fakePct > 83 && !shown.s17) { shown.s17=1; addLog(isHe ? 'עיבוד סופי...' : 'Finalizing...', 'ok'); setStatus('st-ui', true); }
+                }
+            }, 1500);
+
+            const resp = await apiFetch('/api/analyze', { method: 'POST', body: fd });
+            clearInterval(progressTimer);
+
+            if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + (await resp.text()).slice(0, 200));
+
+            data = await resp.json();
+            if (data.error) throw new Error(data.error);
+        } else {
+            // ── Direct HF mode (GitHub Pages — no backend) ──
+            if (mediaType === 'video') {
+                throw new Error(isHe ? 'ניתוח וידאו דורש שרת. ב-GitHub Pages ניתן לנתח תמונות בלבד.' : 'Video analysis requires a server. On GitHub Pages, only image analysis is available.');
             }
-        }, 1500);
+            addLog(isHe ? 'מנתח ישירות מול HuggingFace API...' : 'Analyzing directly via HuggingFace API...', 'ok');
+            setProgress(10, isHe ? 'שלב 1: חילוץ טקסט...' : 'Stage 1: extracting text...');
+            setStatus('st-extract', false);
 
-        const resp = await fetch('/api/analyze', { method: 'POST', body: fd });
-        clearInterval(progressTimer);
-
-        if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + (await resp.text()).slice(0, 200));
-
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error);
+            data = await HF_CLIENT.analyzeImage(file, url, token, (pct, msg) => {
+                setProgress(pct, msg);
+                addLog(msg, 'ok');
+                if (pct >= 20) setStatus('st-extract', true);
+                if (pct >= 50) setStatus('st-narrative', true);
+                if (pct >= 65) { setStatus('st-intel', true); setStatus('st-valid', true); }
+                if (pct >= 80) { setStatus('st-evidence', true); setStatus('st-consistency', true); }
+                if (pct >= 90) setStatus('st-ui', true);
+            });
+        }
 
         if (blossomUrl) {
             data.meta = data.meta || {};
