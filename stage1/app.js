@@ -424,6 +424,31 @@ async function renderHistory() {
         $('heroThreat').textContent = riskLabel(heroItem.riskLevel, isHe);
         const d = new Date(heroItem.date);
         $('heroDate').textContent = d.toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+        // ── תצוגת מדיה בכרטיס Hero ──
+        const heroMedia = $('heroMedia');
+        if (heroMedia) {
+            heroMedia.innerHTML = '';
+            const mUrl = heroItem.mediaUrl || heroItem.fullData?.meta?.media_url || '';
+            if (mUrl && heroItem.mediaType === 'video') {
+                const vid = document.createElement('video');
+                vid.src = mUrl;
+                vid.controls = true;
+                vid.preload = 'metadata';
+                vid.muted = true;
+                vid.playsInline = true;
+                vid.setAttribute('playsinline', '');
+                vid.setAttribute('webkit-playsinline', '');
+                heroMedia.appendChild(vid);
+            } else if (mUrl && heroItem.mediaType === 'image') {
+                const img = document.createElement('img');
+                img.src = mUrl;
+                img.alt = heroItem.fileName || 'Media';
+                img.loading = 'lazy';
+                heroMedia.appendChild(img);
+            }
+        }
+
         heroCard.onclick = async () => {
             const fd = await resolveHistoryReport(heroItem);
             if (fd) { renderResult(fd); showScreen('result'); }
@@ -442,9 +467,18 @@ async function renderHistory() {
         const riskText = riskLabel(item.riskLevel, isHe);
         const narr = isHe ? heT(TR.narrative, item.narrative) : item.narrative;
         const isOwner = myPrefix && item.owner === myPrefix;
+        const mUrl = item.mediaUrl || '';
 
         h += `<div class="history-item" data-report-id="${esc(item.id)}" data-history-idx="${idx}">`;
-        h += `<div class="hi-icon">${icon}</div>`;
+
+        // ── תמונת תצוגה מותאמת לסוג מדיה ──
+        if (mUrl && item.mediaType === 'video') {
+            h += `<div class="hi-media"><video src="${esc(mUrl)}" preload="metadata" muted playsinline></video><span class="hi-play-icon">▶</span></div>`;
+        } else if (mUrl && item.mediaType === 'image') {
+            h += `<div class="hi-media"><img src="${esc(mUrl)}" alt="" loading="lazy"></div>`;
+        } else {
+            h += `<div class="hi-icon">${icon}</div>`;
+        }
         h += `<div class="hi-body">`;
         h += `<div class="hi-kicker">${isHe ? 'שכבת מודיעין' : 'Intelligence Layer'}</div>`;
         h += `<div class="hi-title-row">`;
@@ -1293,6 +1327,30 @@ function renderResult(data) {
 
     const narr = heT(TR.narrative, narrRaw);
     const risk = heT(TR.risk, riskRaw);
+
+    // ── תצוגת מדיה במסך תוצאות ──
+    const resultMedia = $('resultMedia');
+    if (resultMedia) {
+        resultMedia.innerHTML = '';
+        const mUrl = data.meta?.media_url || '';
+        const mType = data.meta?.media_type || '';
+        if (mUrl && mType === 'video') {
+            const vid = document.createElement('video');
+            vid.src = mUrl;
+            vid.controls = true;
+            vid.preload = 'metadata';
+            vid.muted = true;
+            vid.playsInline = true;
+            vid.setAttribute('playsinline', '');
+            resultMedia.appendChild(vid);
+        } else if (mUrl && mType === 'image') {
+            const img = document.createElement('img');
+            img.src = mUrl;
+            img.alt = 'Analyzed media';
+            img.loading = 'lazy';
+            resultMedia.appendChild(img);
+        }
+    }
 
     // ── TRUTH SCORE ──
     $('m-truth').textContent = factualMode ? truthScore + '%' : '—';

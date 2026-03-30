@@ -43,11 +43,15 @@ try {
     $hfClientPath = Join-Path $stage1 "hf-client.js"
     Add-Result -Name "File exists: $hfClientPath" -Passed (Test-Path $hfClientPath) -Details ""
 
+    $cssPath = Join-Path $stage1 "styles.css"
+    Add-Result -Name "File exists: $cssPath" -Passed (Test-Path $cssPath) -Details ""
+
     $index = Read-Text $indexPath
     $app = Read-Text $appPath
     $decent = Read-Text $decentralizedPath
     $cfg = Read-Text $networkCfgPath
     $hfc = Read-Text $hfClientPath
+    $css = Read-Text $cssPath
 
     # 2) Script load order
     $orderPattern = 'nostr\.bundle\.min\.js" defer></script>\s*<script src="\./network-config\.js" defer></script>\s*<script src="\./decentralized\.js" defer></script>\s*<script src="\./hf-client\.js" defer></script>\s*<script src="\./app\.js" defer></script>'
@@ -125,6 +129,18 @@ try {
     Add-Result -Name "HF Client research/claims structure" -Passed ($hfc.Contains("research: research")) -Details ""
     Add-Result -Name "HF Client Whisper WAV fallback" -Passed ($hfc.Contains("audio/wav")) -Details ""
     Add-Result -Name "HF Client smart frame selection" -Passed ($hfc.Contains("selectedTimes") -or $hfc.Contains("smart")) -Details ""
+
+    # 10) Media preview in feed
+    Add-Result -Name "Index has heroMedia container" -Passed ($index.Contains('id="heroMedia"')) -Details ""
+    Add-Result -Name "Index has resultMedia container" -Passed ($index.Contains('id="resultMedia"')) -Details ""
+    Add-Result -Name "App renders video in hero card" -Passed ($app.Contains("heroMedia") -and $app.Contains("vid.src = mUrl")) -Details ""
+    Add-Result -Name "App renders media in result screen" -Passed ($app.Contains("resultMedia") -and $app.Contains("media_url")) -Details ""
+    Add-Result -Name "CSS has hero-media styles" -Passed ($css.Contains(".hero-media")) -Details ""
+    Add-Result -Name "CSS has hi-media thumbnail styles" -Passed ($css.Contains(".hi-media")) -Details ""
+    Add-Result -Name "CSS has result-media styles" -Passed ($css.Contains(".result-media")) -Details ""
+    Add-Result -Name "App shows media thumbnail in history items" -Passed ($app.Contains("hi-media") -and $app.Contains("hi-play-icon")) -Details ""
+    Add-Result -Name "Mobile bottom-nav min height 56px" -Passed ($css.Contains("bottom-nav{height:56px")) -Details ""
+    Add-Result -Name "Mobile nav-tab min font .7rem" -Passed ($css.Contains("nav-tab{font-size:.7") -or $css.Contains("nav-tab{font-size:.72")) -Details ""
 
     # 8) Optional live server check
     try {
