@@ -19,19 +19,67 @@ const HISTORY_MAX = 50;
 let _sharedHistory = null;
 let _sharedLoading = false;
 
+function getDecentralizedClient() {
+    return window.TrueOrFakeNet || null;
+}
+
+function detectMediaType(file, url) {
+    if (file && file.type) {
+        if (file.type.startsWith('video/')) return 'video';
+        if (file.type.startsWith('image/')) return 'image';
+        if (file.type.startsWith('audio/')) return 'audio';
+    }
+    if (url) return 'image';
+    return 'unknown';
+}
+
+async function loadRelayHistory(limit = 25) {
+    const net = getDecentralizedClient();
+    if (!net || typeof net.loadRelayReports !== 'function') return [];
+    try {
+        return await net.loadRelayReports(limit);
+    } catch (_) {
+        return [];
+    }
+}
+
+function mergeHistoryLists(primary, secondary) {
+    const map = new Map();
+    [...(primary || []), ...(secondary || [])].forEach(item => {
+        if (!item || !item.id) return;
+        const existing = map.get(item.id);
+        if (!existing) {
+            map.set(item.id, item);
+            return;
+        }
+        map.set(item.id, {
+            ...existing,
+            ...item,
+            fullData: item.fullData || existing.fullData,
+        });
+    });
+    return Array.from(map.values()).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+}
+
 async function loadSharedHistory(force = false) {
     if (_sharedHistory && !force) return _sharedHistory;
     if (_sharedLoading) return _sharedHistory || [];
     _sharedLoading = true;
     try {
+        let serverHistory = [];
         const r = await fetch('/api/reports?limit=50');
         if (r.ok) {
             const data = await r.json();
-            _sharedHistory = data.reports || [];
+            serverHistory = data.reports || [];
         }
+        const localHistory = getLocalHistory();
+        const relayHistory = await loadRelayHistory(25);
+        _sharedHistory = mergeHistoryLists(mergeHistoryLists(serverHistory, localHistory), relayHistory);
     } catch (e) {
-        // fallback to local if server unreachable
-        _sharedHistory = getLocalHistory();
+        // fallback to local + relay if server unreachable
+        const local = getLocalHistory();
+        const relay = await loadRelayHistory(25);
+        _sharedHistory = mergeHistoryLists(local, relay);
     } finally {
         _sharedLoading = false;
     }
@@ -48,14 +96,15 @@ function getHistory() {
     return _sharedHistory || getLocalHistory();
 }
 
-async function saveToHistory(data, fileName) {
+async function saveToHistory(data, fileName, extra = {}) {
     const ui = data.ui_data || {};
     const metrics = ui.ui_metrics || {};
+    const mediaType = extra.mediaType || data.meta?.media_type || 'unknown';
     const entry = {
         id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
         date: new Date().toISOString(),
         fileName: fileName || 'Unknown',
-        mediaType: data.meta?.media_type || 'unknown',
+        mediaType,
         truthScore: metrics.truth_score ?? 0,
         authenticity: metrics.authenticity_score ?? 0,
         narrative: metrics.narrative || 'Unclear',
@@ -63,6 +112,9 @@ async function saveToHistory(data, fileName) {
         confidence: metrics.confidence_level ?? 0,
         isSatire: !!(ui.satire_detected),
         summary: (ui.ui_summary || '').slice(0, 200),
+        mediaUrl: extra.mediaUrl || '',
+        relay_saved: false,
+        relay_event_id: '',
         fullData: data,
     };
 
@@ -70,9 +122,6 @@ async function saveToHistory(data, fileName) {
     const token = ($('token') && $('token').value.trim()) || '';
     if (token) {
         try {
-            const fd = new FormData();
-            fd.append('hf_token', token);
-            fd.append('data', JSON.stringify(entry));
             // send entry JSON as request body
             await fetch('/api/reports/save', {
                 method: 'POST',
@@ -80,6 +129,39 @@ async function saveToHistory(data, fileName) {
                 body: JSON.stringify({ ...entry, hf_token_hint: token }),
             });
         } catch (e) { /* silent — still save locally */ }
+    }
+
+    // ── שמירה מבוזרת ל-Relay (כמו SOS) ──
+    try {
+        const net = getDecentralizedClient();
+        if (net && typeof net.publishReport === 'function') {
+            const relayEventId = await net.publishReport({
+                id: entry.id,
+                date: entry.date,
+                fileName: entry.fileName,
+                mediaType: entry.mediaType,
+                truthScore: entry.truthScore,
+                authenticity: entry.authenticity,
+                narrative: entry.narrative,
+                riskLevel: entry.riskLevel,
+                confidence: entry.confidence,
+                summary: entry.summary,
+                mediaUrl: entry.mediaUrl,
+            });
+            if (relayEventId) {
+                entry.relay_saved = true;
+                entry.relay_event_id = relayEventId;
+
+                if (typeof net.publishTextPost === 'function' && entry.summary) {
+                    net.publishTextPost(entry.summary, [
+                        ['e', relayEventId],
+                        ['t', 'analysis-summary'],
+                    ]).catch(() => {});
+                }
+            }
+        }
+    } catch (e) {
+        // relay publish is best-effort
     }
 
     // ── שמירה מקומית כגיבוי ──
@@ -157,7 +239,7 @@ async function renderHistory() {
     if (heroCard && heroItem) {
         heroCard.classList.remove('hidden');
         heroCard.className = `hero-card trust-${truthTone(heroItem.truthScore)} risk-${riskTone(heroItem.riskLevel)} media-${heroItem.mediaType || 'unknown'}`;
-        const icon = heroItem.mediaType === 'video' ? '📺' : heroItem.mediaType === 'image' ? '📸' : '📄';
+        const icon = heroItem.mediaType === 'video' ? '📺' : heroItem.mediaType === 'image' ? '📸' : heroItem.mediaType === 'audio' ? '🎧' : '📄';
         $('heroBadge').textContent = icon;
         $('heroScore').textContent = heroItem.truthScore + '%';
         $('heroScore').className = 'hero-score ' + (heroItem.truthScore >= 60 ? '' : heroItem.truthScore >= 35 ? 'score-med' : 'score-low');
@@ -184,7 +266,7 @@ async function renderHistory() {
     let h = '';
     history.forEach((item, idx) => {
         if (idx === 0 && item === heroItem) return; // skip hero
-        const icon = item.mediaType === 'video' ? '📺' : item.mediaType === 'image' ? '📸' : '📄';
+        const icon = item.mediaType === 'video' ? '📺' : item.mediaType === 'image' ? '📸' : item.mediaType === 'audio' ? '🎧' : '📄';
         const dateStr = new Date(item.date).toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
         const score = item.truthScore;
         const scoreClass = score >= 60 ? 's-high' : score >= 35 ? 's-med' : 's-low';
@@ -517,6 +599,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── היסטוריה — טעינה ראשונית ──
     renderHistory();
+    try {
+        const net = getDecentralizedClient();
+        if (net && typeof net.getRelayUrls === 'function' && typeof net.getBlossomServers === 'function') {
+            const relays = net.getRelayUrls();
+            const blossoms = net.getBlossomServers();
+            addLog(
+                currentLang === 'he'
+                    ? `רשת פעילה: ${relays.length} Relay / ${blossoms.length} Blossom`
+                    : `Active network: ${relays.length} Relays / ${blossoms.length} Blossom`,
+                'ok'
+            );
+        }
+    } catch (_) {
+        // ignore network status logging failures
+    }
+
     $('btnClearHistory').addEventListener('click', () => {
         if (confirm(currentLang === 'he' ? 'למחוק את כל ההיסטוריה?' : 'Clear all history?')) {
             clearHistory();
@@ -692,6 +790,45 @@ function setStatus(id, done) {
     if (el) { el.textContent = done ? '✔' : '⏳'; el.style.color = done ? '#009664' : ''; }
 }
 
+function buildAudioInspectionResult(file, blossomUrl) {
+    const name = file?.name || 'audio';
+    const summaryHe = `הקובץ זוהה כאודיו (${name}) והועלה ל-Blossom בהצלחה. ניתוח אמינות מלא לאודיו עדיין לא הופעל בגרסה זו.`;
+    const summaryEn = `The file was identified as audio (${name}) and uploaded to Blossom successfully. Full credibility analysis for audio is not yet enabled in this version.`;
+    return {
+        meta: { media_type: 'audio', media_url: blossomUrl || '' },
+        ui_data: {
+            ui_metrics: {
+                truth_score: 0,
+                authenticity_score: 0,
+                ai_probability: 0,
+                narrative: 'Unclear',
+                risk_level: 'Low',
+                confidence_level: 0,
+            },
+            ui_summary: currentLang === 'he' ? summaryHe : summaryEn,
+            ui_tags: ['audio'],
+            ui_flags: [currentLang === 'he' ? 'ניתוח אודיו עדיין לא פעיל' : 'Audio analysis not enabled yet'],
+            confidence_reasons: [],
+            factual_mode: false,
+            content_type: 'audio',
+        },
+        intelligence: {
+            final_assessment: currentLang === 'he' ? 'זוהה אודיו ונשמר קישור מבוזר' : 'Audio identified and decentralized link stored',
+        },
+        validation: {
+            is_valid: true,
+            issues: [currentLang === 'he' ? 'אין מודול ניתוח אודיו פעיל' : 'No active audio analysis module'],
+        },
+        research: {},
+        diagnostics: {
+            degraded_mode: true,
+            issues: [currentLang === 'he' ? 'אודיו בלבד: שמירה וסיווג' : 'Audio only: storage + classification'],
+        },
+        pipeline: [],
+        output: { summary: currentLang === 'he' ? summaryHe : summaryEn },
+    };
+}
+
 // ═══════════════════════════════════════════════
 //  ANALYSIS — הפעלת ניתוח
 // ═══════════════════════════════════════════════
@@ -717,14 +854,62 @@ async function startAnalysis() {
     ['st-extract', 'st-narrative', 'st-intel', 'st-valid', 'st-evidence', 'st-consistency', 'st-ui'].forEach(id => setStatus(id, false));
 
     const label = file ? file.name : 'URL';
+    const mediaType = detectMediaType(file, url);
+    const net = getDecentralizedClient();
+    let blossomUrl = '';
+
     addLog(isHe ? 'מתחיל ניתוח: ' + label : 'Starting analysis: ' + label);
     setProgress(5, isHe ? 'מעלה מדיה...' : 'Uploading media...');
 
     try {
+        if (file) {
+            if (!net || typeof net.uploadToBlossom !== 'function') {
+                throw new Error(isHe ? 'Blossom לא זמין כרגע בדפדפן זה' : 'Blossom is not available in this browser');
+            }
+            addLog(isHe ? 'יוצר זהות Nostr מקומית...' : 'Preparing local Nostr identity...');
+            if (typeof net.ensureKeys === 'function') await net.ensureKeys();
+            const profileName = localStorage.getItem('hf_user') || 'TrueOrFake User';
+            if (typeof net.publishProfile === 'function') {
+                net.publishProfile(profileName).catch(() => {});
+            }
+
+            addLog(isHe ? 'מעלה קובץ ל-Blossom...' : 'Uploading file to Blossom...');
+            let syntheticPct = 8;
+            const blossomTicker = setInterval(() => {
+                syntheticPct = Math.min(40, syntheticPct + 2);
+                setProgress(syntheticPct, isHe ? 'העלאה מבוזרת ל-Blossom...' : 'Decentralized Blossom upload...');
+            }, 400);
+            try {
+                blossomUrl = await net.uploadToBlossom(file);
+            } finally {
+                clearInterval(blossomTicker);
+            }
+            addLog((isHe ? 'הקובץ הועלה ל-Blossom: ' : 'Uploaded to Blossom: ') + blossomUrl, 'ok');
+            setProgress(42, isHe ? 'העלאה הסתיימה, מתחיל ניתוח...' : 'Upload complete, starting analysis...');
+
+            if (mediaType === 'audio') {
+                const audioData = buildAudioInspectionResult(file, blossomUrl);
+                const analysisLabel = file.name;
+                await saveToHistory(audioData, analysisLabel, { mediaType: 'audio', mediaUrl: blossomUrl });
+
+                window.__file = null;
+                $('selectedFile').classList.add('hidden');
+                $('fileInput').value = '';
+
+                addLog(isHe ? 'זוהה אודיו ונשמר קישור מבוזר' : 'Audio identified and decentralized link stored', 'ok');
+                setProgress(100, isHe ? 'סיום!' : 'Done!');
+                renderResult(audioData);
+                showScreen('result');
+                $('btnGo').disabled = false;
+                return;
+            }
+        }
+
         const fd = new FormData();
         fd.append('hf_token', token);
         if (file) fd.append('media', file);
         else fd.append('image_url', url);
+        if (blossomUrl) fd.append('media_url', blossomUrl);
 
         addLog(isHe ? 'שולח לשרת...' : 'Sending to server...');
         setProgress(10, isHe ? 'שלב 1-2: חילוץ נתונים...' : 'Stage 1-2: extracting...');
@@ -765,8 +950,13 @@ async function startAnalysis() {
         const data = await resp.json();
         if (data.error) throw new Error(data.error);
 
+        if (blossomUrl) {
+            data.meta = data.meta || {};
+            data.meta.media_url = blossomUrl;
+        }
+
         const analysisLabel = file ? file.name : (url ? url.split('/').pop().slice(0, 40) : 'Analysis');
-        await saveToHistory(data, analysisLabel);
+        await saveToHistory(data, analysisLabel, { mediaType, mediaUrl: blossomUrl });
 
         window.__file = null;
         $('selectedFile').classList.add('hidden');

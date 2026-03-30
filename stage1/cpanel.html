@@ -48,6 +48,15 @@ body{background:var(--bg);color:var(--text);font-family:'Assistant',sans-serif;m
 .stat-card .sv{font-size:1.6rem;font-weight:700;color:var(--accent)}
 .stat-card .sl{font-size:.75rem;color:var(--muted);margin-top:2px}
 
+/* ── Data sources panel ── */
+.sources-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+.sources-panel h3{font-size:.92rem;margin-bottom:10px}
+.sources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:8px}
+.src-chip{border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:.78rem;color:var(--muted);background:#0f1520}
+.src-chip.ok{border-color:rgba(0,255,148,.3);color:#9ff4cd}
+.src-chip.off{border-color:rgba(255,176,32,.3);color:#ffd28a}
+.rss-list{font-size:.76rem;color:var(--muted);line-height:1.5;word-break:break-all}
+
 /* ── Toolbar ── */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar h2{font-size:1rem;flex:1}
@@ -117,6 +126,12 @@ tr:hover td{background:rgba(255,255,255,.025)}
       <div class="stat-card"><div class="sv" id="st-image">—</div><div class="sl">תמונות</div></div>
       <div class="stat-card"><div class="sv" id="st-text">—</div><div class="sl">טקסט</div></div>
       <div class="stat-card"><div class="sv" id="st-size">—</div><div class="sl">גודל (KB)</div></div>
+    </div>
+
+    <div class="sources-panel">
+      <h3>מקורות מידע מחוברים</h3>
+      <div class="sources-grid" id="sourcesGrid"></div>
+      <div class="rss-list" id="rssFeeds"></div>
     </div>
 
     <!-- Toolbar -->
@@ -253,7 +268,33 @@ async function loadStats(){
     document.getElementById('st-image').textContent = (d.by_media_type||{}).image ?? 0;
     document.getElementById('st-text').textContent  = (d.by_media_type||{}).text  ?? 0;
     document.getElementById('st-size').textContent  = d.storage_kb ?? '—';
+    renderSources(d.connected_sources || {});
   }catch(e){ /* ignore */ }
+}
+
+function renderSources(sources){
+  const grid = document.getElementById('sourcesGrid');
+  const rss = document.getElementById('rssFeeds');
+  if(!grid || !rss) return;
+  const engines = Array.isArray(sources.engines) ? sources.engines : [];
+  if(!engines.length){
+    grid.innerHTML = '<div class="src-chip off">אין נתוני מקורות זמינים</div>';
+    rss.textContent = '';
+    return;
+  }
+  let h='';
+  engines.forEach(e=>{
+    const on = !!e.enabled;
+    h += `<div class="src-chip ${on?'ok':'off'}">${esc(e.id||'source')} · ${on?'ON':'OFF'}</div>`;
+  });
+  grid.innerHTML = h;
+
+  const feeds = Array.isArray(sources.rss_feeds) ? sources.rss_feeds : [];
+  if(feeds.length){
+    rss.innerHTML = '<strong>RSS Feeds:</strong><br>' + feeds.map(f=>esc(f)).join('<br>');
+  }else{
+    rss.innerHTML = '<strong>RSS Feeds:</strong> לא מוגדרים';
+  }
 }
 
 async function loadReports(){

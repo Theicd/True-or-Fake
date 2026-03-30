@@ -5,6 +5,8 @@ Steps: decompose → speech → OCR → objects → captions → AI detect →
        text merge → questions → reinvestigate → combine → summary
 """
 import os, json, time, base64, asyncio, hashlib, tempfile, subprocess, re, logging
+import xml.etree.ElementTree as ET
+from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 from pathlib import Path
 import httpx
 
@@ -294,16 +296,30 @@ P_CRITICAL_QUESTIONS = (
     "- Each question must be searchable on the internet\n"
     "- Classify each question by type\n"
     "- Assign priority (1=highest, 5=lowest)\n"
-    "- Write questions in English (for web search)\n"
+    "- Generate BOTH English and Hebrew versions for each question\n"
+    "- English: optimized for global web search\n"
+    "- Hebrew: optimized for Israeli/Hebrew sources and RSS feeds\n"
     "- Maximum 8 questions\n\n"
     "OUTPUT (STRICT JSON ONLY):\n"
     '{\n'
     '  "questions": [\n'
-    '    {"question": "...", "type": "fact_check", "priority": 1},\n'
-    '    {"question": "...", "type": "timeline", "priority": 2}\n'
+    '    {"question_en": "...", "question_he": "...", "type": "fact_check", "priority": 1},\n'
+    '    {"question_en": "...", "question_he": "...", "type": "timeline", "priority": 2}\n'
     '  ]\n'
     '}\n\n'
     "VALID TYPES: fact_check, timeline, entity_verification, location, statistics, source_check"
+)
+
+P_TRANSLATE_TO_HE = (
+    "Translate the following investigative questions from English to Hebrew.\n"
+    "Return strict JSON only.\n"
+    '{"questions_he": ["...", "..."]}'
+)
+
+P_TRANSLATE_TO_EN = (
+    "Translate the following investigative questions from Hebrew to English.\n"
+    "Return strict JSON only.\n"
+    '{"questions_en": ["...", "..."]}'
 )
 
 # ── שלב 4: Verification Model — דירוג per-claim ──
@@ -1386,6 +1402,94 @@ async def stage_ui_adapter(intelligence_step, consistency_data, token, narrative
 #  Flow: Claims → Questions → Multi-Search → Verify → Context → Reliability
 # ═══════════════════════════════════════════════════════════
 
+DEFAULT_RSS_FEEDS = [
+    "https://www.ynet.co.il/Integration/StoryRss2.xml",
+    "https://www.jpost.com/rss/rssfeedsheadlines.aspx",
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://www.now14.co.il/feed/",
+    "https://www.timesofisrael.com/feed/",
+    "https://www.abc.net.au/news/feed/51120/rss.xml",
+    "https://www.theguardian.com/uk/rss",
+    "https://www.theguardian.com/world/rss",
+    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "https://www.ft.com/world?format=rss",
+    "https://rss.dw.com/rdf/rss-en-all",
+    "https://www.euronews.com/rss?level=theme&name=news",
+    "https://www.scmp.com/rss/91/feed/",
+    "https://feeds.npr.org/1004/rss.xml",
+    "https://www.cbsnews.com/latest/rss/world",
+    "https://feeds.skynews.com/feeds/rss/world.xml",
+    "https://www.france24.com/en/rss",
+    "https://www.npr.org/rss/rss.php?id=1004",
+]
+
+
+def _load_rss_feeds():
+    env_val = (os.getenv("RSS_FEED_URLS", "") or "").strip()
+    if env_val:
+        feeds = [x.strip() for x in env_val.split(",") if x.strip()]
+        if feeds:
+            return feeds
+    return DEFAULT_RSS_FEEDS
+
+
+def _strip_html(text):
+    cleaned = re.sub(r"<[^>]+>", " ", text or "")
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def _contains_hebrew(text):
+    return bool(re.search(r"[\u0590-\u05FF]", text or ""))
+
+
+async def _translate_questions(questions, token, to_lang="he"):
+    if not questions:
+        return []
+    if to_lang == "he":
+        system = P_TRANSLATE_TO_HE
+        key = "questions_he"
+    else:
+        system = P_TRANSLATE_TO_EN
+        key = "questions_en"
+    user_msg = f"QUESTIONS:\n{json.dumps(questions, ensure_ascii=False)}"
+    resp, _ = await _api_chat(user_msg, token, system=system, max_tok=800)
+    parsed = _extract_json(resp)
+    vals = parsed.get(key, []) if isinstance(parsed, dict) else []
+    return [v for v in vals if isinstance(v, str) and len(v.strip()) > 2]
+
+
+def get_connected_sources():
+    """Expose connected data sources for CPanel diagnostics."""
+    rss_feeds = _load_rss_feeds()
+    return {
+        "languages": ["he", "en"],
+        "engines": [
+            {"id": "duckduckgo", "enabled": True, "type": "web_search"},
+            {"id": "duckduckgo_web", "enabled": True, "type": "web_search"},
+            {"id": "google_web", "enabled": True, "type": "web_search"},
+            {"id": "bing_web", "enabled": True, "type": "web_search"},
+            {"id": "wikipedia", "enabled": True, "type": "knowledge_base"},
+            {"id": "wikidata", "enabled": True, "type": "knowledge_base"},
+            {"id": "arxiv", "enabled": True, "type": "research_papers"},
+            {"id": "openalex", "enabled": True, "type": "research_papers"},
+            {"id": "crossref", "enabled": True, "type": "research_papers"},
+            {"id": "pubmed", "enabled": True, "type": "research_papers"},
+            {"id": "hackernews", "enabled": True, "type": "tech_news"},
+            {"id": "gdelt", "enabled": True, "type": "global_news"},
+            {"id": "rss_feeds", "enabled": bool(rss_feeds), "type": "news_feeds", "feed_count": len(rss_feeds)},
+            {"id": "reddit_comments", "enabled": True, "type": "user_comments"},
+            {"id": "facebook_public", "enabled": True, "type": "public_web_search"},
+            {"id": "google_factcheck", "enabled": bool(os.environ.get("GOOGLE_FACTCHECK_KEY", "")), "type": "fact_check"},
+            {"id": "newsapi", "enabled": bool(os.environ.get("NEWS_API_KEY", "")), "type": "news_api"},
+            {"id": "google_custom_search", "enabled": bool(os.environ.get("GOOGLE_CSE_KEY", "") and os.environ.get("GOOGLE_CSE_CX", "")), "type": "web_search"},
+        ],
+        "rss_feeds": rss_feeds,
+        "notes": {
+            "google_ai_overview": "No official public API for Google AI Overview text extraction.",
+            "comments": "Reddit public search is integrated as user-comment signal.",
+        },
+    }
+
 # ── SEARCH LAYER: DuckDuckGo ──
 async def _search_duckduckgo(query):
     """חיפוש חינמי ב-DuckDuckGo Instant Answer API — ללא API key"""
@@ -1405,6 +1509,316 @@ async def _search_duckduckgo(query):
     except Exception as e:
         log.warning(f"DuckDuckGo search failed for '{query[:50]}': {e}")
         return {"abstract": "", "source": "", "related": [], "engine": "duckduckgo", "error": str(e)}
+
+
+async def _search_duckduckgo_web(query):
+    """DuckDuckGo HTML results with URLs (no API key)."""
+    url = "https://duckduckgo.com/html/"
+    params = {"q": query}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0), follow_redirects=True) as client:
+            resp = await client.get(url, params=params, headers={"User-Agent": "Mozilla/5.0"})
+            html = resp.text
+            raw_links = re.findall(r'href="((?:https?:)?//duckduckgo.com/l/\?[^\"]+)"', html)[:20]
+            items = []
+            for rl in raw_links:
+                if rl.startswith("//"):
+                    rl = "https:" + rl
+                qs = parse_qs(urlparse(rl).query)
+                uddg = (qs.get("uddg") or [""])[0]
+                link = unquote(uddg) if uddg else ""
+                if not link:
+                    continue
+                if any(bad in link for bad in ["duckduckgo.com", "javascript:"]):
+                    continue
+                items.append({"title": "", "snippet": "", "link": link})
+                if len(items) >= 5:
+                    break
+            return {"items": items, "engine": "duckduckgo_web"}
+    except Exception as e:
+        return {"items": [], "engine": "duckduckgo_web", "error": str(e)}
+
+
+async def _search_google_web(query):
+    """Google web search via public HTML (no API key)."""
+    url = "https://www.google.com/search"
+    params = {"q": query, "num": "7", "hl": "en", "gbv": "1"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0), follow_redirects=True) as client:
+            resp = await client.get(
+                url,
+                params=params,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept-Language": "en-US,en;q=0.9",
+                },
+            )
+            html = resp.text
+            links = re.findall(r'href="/url\?q=(https?://[^&\"]+)', html)[:20]
+            if not links:
+                links = re.findall(r'href="(https?://[^\"]+)"', html)[:40]
+            items = []
+            for link in links:
+                clean = unquote(link)
+                if any(x in clean for x in ["google.com", "webcache.googleusercontent.com"]):
+                    continue
+                items.append({"title": "", "snippet": "", "link": clean})
+                if len(items) >= 5:
+                    break
+            return {"items": items, "engine": "google_web"}
+    except Exception as e:
+        return {"items": [], "engine": "google_web", "error": str(e)}
+
+
+async def _search_bing_web(query):
+    """Bing web search via public HTML (no API key)."""
+    url = "https://www.bing.com/search"
+    params = {"q": query, "count": "8", "setlang": "en"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0), follow_redirects=True) as client:
+            resp = await client.get(
+                url,
+                params=params,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept-Language": "en-US,en;q=0.9",
+                },
+            )
+            html = resp.text
+            links = re.findall(r'<a href="(https?://[^\"]+)" h="ID=', html)[:25]
+            items = []
+            for link in links:
+                clean = unquote(link)
+                if any(x in clean for x in ["bing.com", "microsoft.com"]):
+                    continue
+                items.append({"title": "", "snippet": "", "link": clean})
+                if len(items) >= 5:
+                    break
+            return {"items": items, "engine": "bing_web"}
+    except Exception as e:
+        return {"items": [], "engine": "bing_web", "error": str(e)}
+
+
+async def _search_wikidata(query):
+    """Wikidata entity search (free, no key)."""
+    url = "https://www.wikidata.org/w/api.php"
+    params = {
+        "action": "wbsearchentities",
+        "format": "json",
+        "language": "en",
+        "uselang": "en",
+        "search": query,
+        "limit": "5",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            resp = await client.get(url, params=params, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+            data = resp.json()
+            items = []
+            for e in data.get("search", [])[:5]:
+                items.append(
+                    {
+                        "id": e.get("id", ""),
+                        "label": e.get("label", ""),
+                        "description": e.get("description", ""),
+                        "url": e.get("concepturi", ""),
+                    }
+                )
+            return {"items": items, "engine": "wikidata"}
+    except Exception as e:
+        return {"items": [], "engine": "wikidata", "error": str(e)}
+
+
+async def _search_arxiv(query):
+    """arXiv public API search (free, no key)."""
+    url = "https://export.arxiv.org/api/query"
+    params = {"search_query": f"all:{query}", "start": "0", "max_results": "5"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0)) as client:
+            resp = await client.get(url, params=params, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+            if resp.status_code != 200:
+                return {
+                    "entries": [],
+                    "engine": "arxiv",
+                    "error": f"HTTP {resp.status_code}",
+                    "note": "rate_limited_or_unavailable",
+                }
+            root = ET.fromstring(resp.text)
+            ns = {"a": "http://www.w3.org/2005/Atom"}
+            entries = []
+            for entry in root.findall("a:entry", ns)[:5]:
+                title = _strip_html(entry.findtext("a:title", default="", namespaces=ns))
+                summary = _strip_html(entry.findtext("a:summary", default="", namespaces=ns))
+                link = ""
+                for l in entry.findall("a:link", ns):
+                    href = (l.attrib.get("href") or "").strip()
+                    rel = (l.attrib.get("rel") or "").strip()
+                    if href and (rel == "alternate" or "arxiv.org/abs/" in href):
+                        link = href
+                        break
+                entries.append({"title": title, "summary": summary[:500], "link": link})
+            return {"entries": entries, "engine": "arxiv"}
+    except Exception as e:
+        return {"entries": [], "engine": "arxiv", "error": str(e)}
+
+
+async def _search_openalex(query):
+    """OpenAlex works search (free, no key)."""
+    url = "https://api.openalex.org/works"
+    params = {"search": query, "per-page": "5"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0)) as client:
+            resp = await client.get(url, params=params, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+            data = resp.json()
+            items = []
+            for w in data.get("results", [])[:5]:
+                items.append(
+                    {
+                        "title": (w.get("title") or "")[:300],
+                        "year": w.get("publication_year"),
+                        "doi": w.get("doi") or "",
+                        "url": w.get("id") or "",
+                    }
+                )
+            return {"items": items, "engine": "openalex"}
+    except Exception as e:
+        return {"items": [], "engine": "openalex", "error": str(e)}
+
+
+async def _search_crossref(query):
+    """Crossref works search (free, no key)."""
+    url = "https://api.crossref.org/works"
+    params = {"query": query, "rows": "5"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0)) as client:
+            resp = await client.get(url, params=params, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+            data = resp.json().get("message", {})
+            items = []
+            for w in data.get("items", [])[:5]:
+                title = ""
+                if isinstance(w.get("title"), list) and w.get("title"):
+                    title = w.get("title")[0]
+                items.append(
+                    {
+                        "title": (title or "")[:300],
+                        "doi": w.get("DOI") or "",
+                        "publisher": w.get("publisher") or "",
+                        "url": w.get("URL") or "",
+                    }
+                )
+            return {"items": items, "engine": "crossref"}
+    except Exception as e:
+        return {"items": [], "engine": "crossref", "error": str(e)}
+
+
+async def _search_pubmed(query):
+    """PubMed search via NCBI E-utilities (free, no key)."""
+    base = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0)) as client:
+            s = await client.get(
+                f"{base}/esearch.fcgi",
+                params={"db": "pubmed", "term": query, "retmode": "json", "retmax": "5"},
+                headers={"User-Agent": "MediaAnalyzerV2/1.0"},
+            )
+            ids = (s.json().get("esearchresult", {}) or {}).get("idlist", [])[:5]
+            if not ids:
+                return {"items": [], "engine": "pubmed"}
+            d = await client.get(
+                f"{base}/esummary.fcgi",
+                params={"db": "pubmed", "id": ",".join(ids), "retmode": "json"},
+                headers={"User-Agent": "MediaAnalyzerV2/1.0"},
+            )
+            data = d.json().get("result", {})
+            items = []
+            for pid in ids:
+                row = data.get(pid, {})
+                items.append(
+                    {
+                        "pmid": pid,
+                        "title": (row.get("title") or "")[:300],
+                        "pubdate": row.get("pubdate") or "",
+                        "url": f"https://pubmed.ncbi.nlm.nih.gov/{pid}/",
+                    }
+                )
+            return {"items": items, "engine": "pubmed"}
+    except Exception as e:
+        return {"items": [], "engine": "pubmed", "error": str(e)}
+
+
+async def _search_hackernews(query):
+    """Hacker News via Algolia API (free, no key)."""
+    url = "https://hn.algolia.com/api/v1/search"
+    params = {"query": query, "tags": "story", "hitsPerPage": "5"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            resp = await client.get(url, params=params)
+            hits = resp.json().get("hits", [])[:5]
+            items = []
+            for h in hits:
+                items.append(
+                    {
+                        "title": h.get("title") or "",
+                        "url": h.get("url") or f"https://news.ycombinator.com/item?id={h.get('objectID','')}",
+                        "points": h.get("points", 0),
+                    }
+                )
+            return {"items": items, "engine": "hackernews"}
+    except Exception as e:
+        return {"items": [], "engine": "hackernews", "error": str(e)}
+
+
+async def _search_gdelt(query):
+    """GDELT DOC API (free, no key) for global news articles."""
+    url = "https://api.gdeltproject.org/api/v2/doc/doc"
+    params = {
+        "query": query,
+        "mode": "ArtList",
+        "maxrecords": "5",
+        "format": "json",
+        "sort": "DateDesc",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0)) as client:
+            resp = await client.get(url, params=params, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+            data = resp.json()
+            articles = []
+            for a in data.get("articles", [])[:5]:
+                articles.append(
+                    {
+                        "title": a.get("title") or "",
+                        "source": a.get("domain") or "",
+                        "url": a.get("url") or "",
+                        "seendate": a.get("seendate") or "",
+                    }
+                )
+            return {"articles": articles, "engine": "gdelt"}
+    except Exception as e:
+        return {"articles": [], "engine": "gdelt", "error": str(e)}
+
+
+async def _search_facebook_public(query):
+    """Facebook public-web discovery without API key (searches indexed public Facebook URLs)."""
+    site_query = f"site:facebook.com {query}"
+    google_res = await _search_google_web(site_query)
+    links = []
+    for it in google_res.get("items", [])[:10]:
+        link = (it.get("link") or "").strip()
+        if "facebook.com" in link:
+            links.append(link)
+
+    if not links:
+        ddg_res = await _search_duckduckgo_web(site_query)
+        for it in ddg_res.get("items", [])[:10]:
+            link = (it.get("link") or "").strip()
+            if "facebook.com" in link:
+                links.append(link)
+
+    unique = []
+    for l in links:
+        if l not in unique:
+            unique.append(l)
+    return {"links": unique[:5], "engine": "facebook_public"}
 
 
 # ── SEARCH LAYER: Wikipedia REST API ──
@@ -1502,18 +1916,141 @@ async def _search_news(query):
         return {"articles": [], "engine": "newsapi", "error": str(e)}
 
 
+async def _search_google_custom(query):
+    """Google Custom Search JSON API (optional)."""
+    key = os.environ.get("GOOGLE_CSE_KEY", "")
+    cx = os.environ.get("GOOGLE_CSE_CX", "")
+    if not key or not cx:
+        return {"items": [], "engine": "google_cse", "note": "GOOGLE_CSE_KEY/GOOGLE_CSE_CX not configured"}
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {"key": key, "cx": cx, "q": query, "num": 5}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            resp = await client.get(url, params=params)
+            data = resp.json()
+            items = []
+            for it in data.get("items", [])[:5]:
+                items.append({
+                    "title": it.get("title", ""),
+                    "snippet": it.get("snippet", ""),
+                    "link": it.get("link", ""),
+                })
+            return {"items": items, "engine": "google_cse"}
+    except Exception as e:
+        log.warning(f"Google CSE search failed for '{query[:50]}': {e}")
+        return {"items": [], "engine": "google_cse", "error": str(e)}
+
+
+async def _search_rss(query):
+    """Search configured RSS feeds for relevant headlines/snippets."""
+    feeds = _load_rss_feeds()
+    query_tokens = [t for t in re.findall(r"[\w\u0590-\u05FF]{3,}", query.lower()) if len(t) >= 3][:10]
+    if not feeds:
+        return {"matches": [], "engine": "rss", "note": "no feeds configured"}
+
+    matches = []
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0), follow_redirects=True) as client:
+            for feed_url in feeds[:20]:
+                try:
+                    resp = await client.get(feed_url, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+                    if resp.status_code != 200:
+                        continue
+                    root = ET.fromstring(resp.text)
+                    items = root.findall(".//item")[:25]
+                    for item in items:
+                        title = _strip_html((item.findtext("title") or ""))
+                        desc = _strip_html((item.findtext("description") or ""))
+                        link = (item.findtext("link") or "").strip()
+                        blob = f"{title} {desc}".lower()
+                        score = sum(1 for tok in query_tokens if tok in blob)
+                        if score > 0:
+                            matches.append({
+                                "title": title[:200],
+                                "description": desc[:400],
+                                "link": link,
+                                "feed": feed_url,
+                                "score": score,
+                            })
+                except Exception:
+                    continue
+    except Exception as e:
+        return {"matches": [], "engine": "rss", "error": str(e)}
+
+    matches.sort(key=lambda x: x.get("score", 0), reverse=True)
+    return {"matches": matches[:10], "engine": "rss", "feed_count": len(feeds)}
+
+
+async def _search_reddit_comments(query):
+    """User-comment signal from public Reddit search results."""
+    try:
+        url = f"https://www.reddit.com/search.json?q={quote_plus(query)}&limit=5&sort=relevance&t=month"
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            resp = await client.get(url, headers={"User-Agent": "MediaAnalyzerV2/1.0"})
+            if resp.status_code != 200:
+                return {"posts": [], "engine": "reddit_comments", "error": f"HTTP {resp.status_code}"}
+            data = resp.json()
+            posts = []
+            for child in data.get("data", {}).get("children", [])[:5]:
+                d = child.get("data", {})
+                posts.append({
+                    "title": d.get("title", ""),
+                    "subreddit": d.get("subreddit", ""),
+                    "score": d.get("score", 0),
+                    "num_comments": d.get("num_comments", 0),
+                    "url": "https://www.reddit.com" + (d.get("permalink", "") or ""),
+                    "selftext": (d.get("selftext", "") or "")[:240],
+                })
+            return {"posts": posts, "engine": "reddit_comments"}
+    except Exception as e:
+        return {"posts": [], "engine": "reddit_comments", "error": str(e)}
+
+
 # ── MULTI-SOURCE SEARCH ORCHESTRATOR ──
 async def _search_all_sources(query):
-    """חיפוש במקביל בכל המקורות הזמינים — DuckDuckGo + Wikipedia + FactCheck + News"""
+    """חיפוש במקביל בכל המקורות הזמינים — Web, Knowledge, RSS, Comments."""
     results = await asyncio.gather(
         _search_duckduckgo(query),
+        _search_duckduckgo_web(query),
+        _search_google_web(query),
+        _search_bing_web(query),
         _search_wikipedia(query),
+        _search_wikidata(query),
+        _search_arxiv(query),
+        _search_openalex(query),
+        _search_crossref(query),
+        _search_pubmed(query),
+        _search_hackernews(query),
+        _search_gdelt(query),
         _search_factcheck(query),
         _search_news(query),
+        _search_rss(query),
+        _search_reddit_comments(query),
+        _search_facebook_public(query),
+        _search_google_custom(query),
         return_exceptions=True,
     )
     merged = {"query": query, "sources": []}
-    engines = ["duckduckgo", "wikipedia", "factcheck", "newsapi"]
+    engines = [
+        "duckduckgo",
+        "duckduckgo_web",
+        "google_web",
+        "bing_web",
+        "wikipedia",
+        "wikidata",
+        "arxiv",
+        "openalex",
+        "crossref",
+        "pubmed",
+        "hackernews",
+        "gdelt",
+        "factcheck",
+        "newsapi",
+        "rss",
+        "reddit_comments",
+        "facebook_public",
+        "google_cse",
+    ]
     for i, r in enumerate(results):
         if isinstance(r, Exception):
             merged["sources"].append({"engine": engines[i], "error": str(r)})
@@ -1599,13 +2136,49 @@ async def stage_research_questions(claims_step, output, token):
     normalized = []
     for q in parsed["questions"][:8]:
         if isinstance(q, str) and len(q) > 10:
-            normalized.append({"question": q, "type": "fact_check", "priority": 3})
-        elif isinstance(q, dict) and q.get("question") and len(q["question"]) > 10:
+            if _contains_hebrew(q):
+                normalized.append({"question": q, "question_he": q, "type": "fact_check", "priority": 3})
+            else:
+                normalized.append({"question": q, "question_en": q, "type": "fact_check", "priority": 3})
+        elif isinstance(q, dict) and (q.get("question") or q.get("question_en") or q.get("question_he")):
+            q_main = (q.get("question") or q.get("question_en") or q.get("question_he") or "").strip()
+            q_en = (q.get("question_en") or "").strip()
+            q_he = (q.get("question_he") or "").strip()
+            if not q_en and not q_he and q_main:
+                if _contains_hebrew(q_main):
+                    q_he = q_main
+                else:
+                    q_en = q_main
+            if len(q_en or q_he or q_main) < 10:
+                continue
             normalized.append({
-                "question": q["question"],
+                "question": q_main or q_en or q_he,
+                "question_en": q_en,
+                "question_he": q_he,
                 "type": q.get("type", "fact_check"),
                 "priority": min(5, max(1, int(q.get("priority", 3)))),
             })
+
+    # Ensure both Hebrew and English question variants exist for search.
+    need_he = [q for q in normalized if not (q.get("question_he") or "").strip() and (q.get("question_en") or q.get("question"))]
+    need_en = [q for q in normalized if not (q.get("question_en") or "").strip() and (q.get("question_he") or q.get("question"))]
+
+    if need_he:
+        source_en = [(q.get("question_en") or q.get("question") or "") for q in need_he]
+        translated_he = await _translate_questions(source_en, token, to_lang="he")
+        for i, q in enumerate(need_he):
+            q["question_he"] = (translated_he[i] if i < len(translated_he) else "") or q.get("question_he", "")
+
+    if need_en:
+        source_he = [(q.get("question_he") or q.get("question") or "") for q in need_en]
+        translated_en = await _translate_questions(source_he, token, to_lang="en")
+        for i, q in enumerate(need_en):
+            q["question_en"] = (translated_en[i] if i < len(translated_en) else "") or q.get("question_en", "")
+
+    for q in normalized:
+        q["question_en"] = (q.get("question_en") or q.get("question") or "").strip()
+        q["question_he"] = (q.get("question_he") or "").strip()
+        q["question"] = q.get("question_he") or q.get("question_en") or q.get("question") or ""
     # ── מיון לפי priority (1 = הכי חשוב) ──
     normalized.sort(key=lambda x: x["priority"])
     parsed["questions"] = normalized
@@ -1627,11 +2200,37 @@ async def stage_research_search(questions_step):
 
     # ── חיפוש עד 6 שאלות — כל שאלה ב-4 מקורות במקביל ──
     async def _search_one(q_obj):
-        q_text = q_obj["question"] if isinstance(q_obj, dict) else str(q_obj)
+        if isinstance(q_obj, dict):
+            q_en = (q_obj.get("question_en") or "").strip()
+            q_he = (q_obj.get("question_he") or "").strip()
+            q_main = (q_obj.get("question") or "").strip()
+            queries = []
+            for q in [q_en, q_he, q_main]:
+                if q and q not in queries:
+                    queries.append(q)
+            if not queries:
+                queries = [str(q_obj)]
+            variant_results = await asyncio.gather(*[_search_all_sources(q) for q in queries[:2]])
+            flat_sources = []
+            for vr in variant_results:
+                for s in vr.get("sources", []):
+                    flat_sources.append(s)
+            return {
+                "question": q_he or q_en or q_main,
+                "question_en": q_en,
+                "question_he": q_he,
+                "type": q_obj.get("type", "fact_check"),
+                "priority": q_obj.get("priority", 3),
+                "multi_source": {
+                    "query": q_he or q_en or q_main,
+                    "query_variants": queries[:2],
+                    "variant_results": variant_results,
+                    "sources": flat_sources,
+                },
+            }
+        q_text = str(q_obj)
         result = await _search_all_sources(q_text)
-        return {"question": q_text, "type": q_obj.get("type", "fact_check") if isinstance(q_obj, dict) else "fact_check",
-                "priority": q_obj.get("priority", 3) if isinstance(q_obj, dict) else 3,
-                "multi_source": result}
+        return {"question": q_text, "type": "fact_check", "priority": 3, "multi_source": result}
 
     search_tasks = [_search_one(q) for q in questions[:6]]
     search_results = await asyncio.gather(*search_tasks)

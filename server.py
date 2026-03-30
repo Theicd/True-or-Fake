@@ -2,11 +2,11 @@
 import os, traceback, json, time, hmac, hashlib, secrets
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form, Request, Header
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from analyzer import analyze_video, analyze_image
+from analyzer import analyze_video, analyze_image, get_connected_sources
 # ── Multi-Agent System (V2) — ארכיטקטורת סוכנים היררכית ──
 from multi_agent_system import (
     analyze_video_multi_agent, analyze_image_multi_agent,
@@ -218,7 +218,22 @@ async def global_err(request: Request, exc: Exception):
 
 @app.get("/")
 async def index():
-    return FileResponse(str(ROOT / "stage1" / "index.html"), media_type="text/html")
+    return RedirectResponse(url="/stage1/index.html", status_code=307)
+
+
+@app.get("/index.html")
+async def index_html():
+    return RedirectResponse(url="/stage1/index.html", status_code=307)
+
+
+@app.get("/styles.css")
+async def root_styles():
+    return FileResponse(str(ROOT / "styles.css"), media_type="text/css")
+
+
+@app.get("/app.js")
+async def root_app_js():
+    return FileResponse(str(ROOT / "app.js"), media_type="application/javascript")
 
 
 @app.get("/api/health")
@@ -255,6 +270,7 @@ async def analyze(
     hf_token: str = Form(""),
     media: UploadFile = File(None),
     image_url: str = Form(""),
+    media_url: str = Form(""),
 ):
     token = hf_token or os.getenv("HF_TOKEN", "")
     if not token:
@@ -279,6 +295,24 @@ async def analyze(
             if r.status_code == 200:
                 return JSONResponse(await analyze_image(r.content, token))
             return JSONResponse({"error": f"שגיאה בהורדת URL: {r.status_code}"}, 400)
+
+        if media_url:
+            import httpx
+            from urllib.parse import urlparse
+
+            parsed = urlparse(media_url)
+            ext = Path(parsed.path).suffix.lower()
+
+            async with httpx.AsyncClient(timeout=60) as c:
+                r = await c.get(media_url)
+            if r.status_code != 200:
+                return JSONResponse({"error": f"שגיאה בהורדת media_url: {r.status_code}"}, 400)
+
+            if ext in (".mp4", ".mov", ".avi", ".webm", ".mkv"):
+                return JSONResponse(await analyze_video(r.content, token))
+            if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
+                return JSONResponse(await analyze_image(r.content, token))
+            return JSONResponse({"error": f"media_url לא נתמך לניתוח: {ext or 'unknown'}"}, 400)
     except Exception as e:
         import traceback, logging
         logging.getLogger("server").error(f"Analysis error: {traceback.format_exc()}")
@@ -393,6 +427,7 @@ async def save_report(request: Request):
         "date": body.get("date") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "fileName": str(body.get("fileName", "Unknown"))[:200],
         "mediaType": str(body.get("mediaType", "unknown"))[:20],
+        "mediaUrl": str(body.get("mediaUrl", ""))[:2000],
         "truthScore": int(body.get("truthScore", 0)),
         "authenticity": int(body.get("authenticity", 0)),
         "narrative": str(body.get("narrative", "Unclear"))[:50],
@@ -511,12 +546,14 @@ async def admin_stats(authorization: str = Header("")):
         n = r.get("narrative", "Unclear")
         by_narrative[n] = by_narrative.get(n, 0) + 1
     avg_truth = round(sum(r.get("truthScore", 0) for r in reports) / max(len(reports), 1), 1)
+    connected_sources = get_connected_sources()
     return JSONResponse({
         "total": len(reports),
         "by_media_type": by_type,
         "by_narrative": by_narrative,
         "avg_truth_score": avg_truth,
         "storage_kb": round(REPORTS_FILE.stat().st_size / 1024, 1) if REPORTS_FILE.exists() else 0,
+        "connected_sources": connected_sources,
     })
 
 

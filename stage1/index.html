@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
     <title>True or Fake — גלה: אמת או שקר?</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;800&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/stage1/styles.css">
+    <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
         <!-- כפתורי פעולה: שפה + CPanel + התחברות -->
         <div class="header-actions">
             <button class="btn-lang" id="langBtn" aria-label="Toggle language">EN</button>
-            <button class="btn-cpanel" onclick="window.open('/cpanel','_blank')" aria-label="Admin CPanel" title="Admin CPanel">⚙️</button>
+            <button class="btn-cpanel" onclick="window.open((location.hostname === '127.0.0.1' || location.hostname === 'localhost') ? '/cpanel' : './cpanel.html','_blank')" aria-label="Admin CPanel" title="Admin CPanel">⚙️</button>
             <button class="btn-user" id="btnUser">
                 <span class="user-icon">👤</span>
                 <span class="user-label" data-he="התחבר" data-en="Login">התחבר</span>
@@ -166,7 +166,7 @@
         <div class="upload-wrap hidden" id="uploadWrap">
             <div class="upload-header">
                 <h2 data-he="ניתוח חדש" data-en="New Analysis">ניתוח חדש <span class="info-tip" data-tip="העלה וידאו או תמונה — המערכת תנתח את רמת האמינות והאותנטיות">i</span></h2>
-                <p data-he="העלה וידאו או תמונה לבדיקת אמינות מבוססת AI" data-en="Upload video or image for AI-based credibility check">העלה וידאו או תמונה לבדיקת אמינות מבוססת AI</p>
+                <p data-he="העלה וידאו, תמונה או אודיו. הקובץ נשמר קודם ב-Blossom ואז נבדק לפי סוג המדיה" data-en="Upload video, image or audio. The file is uploaded to Blossom first, then checked by media type">העלה וידאו, תמונה או אודיו. הקובץ נשמר קודם ב-Blossom ואז נבדק לפי סוג המדיה</p>
             </div>
 
             <!-- אזור גרירה -->
@@ -181,7 +181,7 @@
                 <p class="drop-text" data-he="גרור קובץ לכאן" data-en="Drag file here">גרור קובץ לכאן</p>
                 <span class="drop-or" data-he="או" data-en="or">או</span>
                 <button class="btn-outline" id="btnUpload" data-he="בחר קובץ" data-en="Choose File">בחר קובץ</button>
-                <input type="file" id="fileInput" accept="video/*,image/*" style="display:none">
+                <input type="file" id="fileInput" accept="video/*,image/*,audio/*" style="display:none">
                 <div class="file-badge hidden" id="selectedFile"></div>
             </div>
 
@@ -199,6 +199,7 @@
             <div class="formats-row">
                 <span class="fmt">MP4</span><span class="fmt">AVI</span><span class="fmt">MOV</span>
                 <span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">WEBP</span>
+                <span class="fmt">MP3</span><span class="fmt">WAV</span>
             </div>
         </div>
     </section>
@@ -250,7 +251,7 @@
             </div>
         </div>
         <div class="info-footer">
-            <p data-he="גרסה 2.0 · כל הנתונים נשארים בשרתי המשתמש בלבד" data-en="Version 2.0 · All data stays on the user's own server">גרסה 2.0 · כל הנתונים נשארים בשרתי המשתמש בלבד</p>
+            <p data-he="גרסה 2.0 · עובד עם שרתי Relay ו-Blossom האישיים שלך (כולל GitHub Pages)" data-en="Version 2.0 · Runs on your own Relay and Blossom servers (including GitHub Pages)">גרסה 2.0 · עובד עם שרתי Relay ו-Blossom האישיים שלך (כולל GitHub Pages)</p>
         </div>
     </section>
 
@@ -418,6 +419,9 @@
     </button>
 </nav>
 
-<script src="/stage1/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.7.2/lib/nostr.bundle.min.js" defer></script>
+<script src="./network-config.js" defer></script>
+<script src="./decentralized.js" defer></script>
+<script src="./app.js" defer></script>
 </body>
 </html>
