@@ -740,6 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── שפה ──
     $('langBtn').addEventListener('click', toggleLang);
+    if ($('langSelect')) $('langSelect').addEventListener('change', e => setLang(e.target.value));
 
     // ── כפתור משתמש (פתיחת מודאל auth) ──
     $('btnUser').addEventListener('click', () => openAuthModal('login'));
@@ -888,18 +889,50 @@ function updateAnalyzeScreen() {
 // ═══════════════════════════════════════════════
 //  LANGUAGE — מעבר שפה
 // ═══════════════════════════════════════════════
-function toggleLang() {
-    currentLang = currentLang === 'he' ? 'en' : 'he';
-    $('langBtn').textContent = currentLang === 'he' ? 'EN' : 'HE';
-    document.documentElement.lang = currentLang;
-    document.documentElement.dir = currentLang === 'he' ? 'rtl' : 'ltr';
+const RTL_LANGS = ['he', 'ar'];
+
+const UI_LANGUAGES = {
+    he: { label: 'עברית', flag: '🇮🇱' },
+    en: { label: 'English', flag: '🇺🇸' },
+    ru: { label: 'Русский', flag: '🇷🇺' },
+    ar: { label: 'العربية', flag: '🇸🇦' },
+    fr: { label: 'Français', flag: '🇫🇷' },
+    es: { label: 'Español', flag: '🇪🇸' },
+    de: { label: 'Deutsch', flag: '🇩🇪' },
+    pt: { label: 'Português', flag: '🇧🇷' },
+    zh: { label: '中文', flag: '🇨🇳' },
+    ja: { label: '日本語', flag: '🇯🇵' },
+    ko: { label: '한국어', flag: '🇰🇷' },
+    tr: { label: 'Türkçe', flag: '🇹🇷' },
+    hi: { label: 'हिन्दी', flag: '🇮🇳' },
+    it: { label: 'Italiano', flag: '🇮🇹' },
+    uk: { label: 'Українська', flag: '🇺🇦' },
+    pl: { label: 'Polski', flag: '🇵🇱' },
+};
+
+function setLang(code) {
+    if (!UI_LANGUAGES[code]) code = 'he';
+    currentLang = code;
+    const uiBase = (code === 'he' || code === 'ar') ? 'he' : 'en';
+    document.documentElement.lang = code;
+    document.documentElement.dir = RTL_LANGS.includes(code) ? 'rtl' : 'ltr';
     document.querySelectorAll('[data-he]').forEach(el => {
-        el.textContent = el.getAttribute('data-' + currentLang);
+        el.textContent = el.getAttribute('data-' + uiBase);
     });
     document.querySelectorAll('[data-he-placeholder]').forEach(el => {
-        el.placeholder = el.getAttribute('data-' + currentLang + '-placeholder');
+        el.placeholder = el.getAttribute('data-' + uiBase + '-placeholder');
     });
+    const sel = $('langSelect');
+    if (sel) sel.value = code;
+    const btn = $('langBtn');
+    if (btn) btn.textContent = UI_LANGUAGES[code].flag + ' ' + code.toUpperCase();
     renderHistory();
+}
+
+function toggleLang() {
+    const langs = Object.keys(UI_LANGUAGES);
+    const idx = langs.indexOf(currentLang);
+    setLang(langs[(idx + 1) % langs.length]);
 }
 
 // ═══════════════════════════════════════════════
@@ -1249,12 +1282,12 @@ async function startAnalysis() {
             if (mediaType === 'video') {
                 addLog(isHe ? 'מנתח וידאו ישירות בדפדפן (ffmpeg.wasm + HuggingFace)...' : 'Analyzing video directly in browser (ffmpeg.wasm + HuggingFace)...', 'ok');
                 setProgress(3, isHe ? 'שלב 1: פירוק וידאו...' : 'Stage 1: decomposing video...');
-                data = await HF_CLIENT.analyzeVideo(file, token, _hfProgress);
+                data = await HF_CLIENT.analyzeVideo(file, token, _hfProgress, currentLang);
             } else {
                 addLog(isHe ? 'מנתח ישירות מול HuggingFace API...' : 'Analyzing directly via HuggingFace API...', 'ok');
                 setProgress(10, isHe ? 'שלב 1: חילוץ טקסט...' : 'Stage 1: extracting text...');
                 setStatus('st-extract', false);
-                data = await HF_CLIENT.analyzeImage(file, url, token, _hfProgress);
+                data = await HF_CLIENT.analyzeImage(file, url, token, _hfProgress, currentLang);
             }
         }
 
