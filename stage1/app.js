@@ -1156,22 +1156,26 @@ async function startAnalysis() {
             if (data.error) throw new Error(data.error);
         } else {
             // ── Direct HF mode (GitHub Pages — no backend) ──
-            if (mediaType === 'video') {
-                throw new Error(isHe ? 'ניתוח וידאו דורש שרת. ב-GitHub Pages ניתן לנתח תמונות בלבד.' : 'Video analysis requires a server. On GitHub Pages, only image analysis is available.');
-            }
-            addLog(isHe ? 'מנתח ישירות מול HuggingFace API...' : 'Analyzing directly via HuggingFace API...', 'ok');
-            setProgress(10, isHe ? 'שלב 1: חילוץ טקסט...' : 'Stage 1: extracting text...');
-            setStatus('st-extract', false);
-
-            data = await HF_CLIENT.analyzeImage(file, url, token, (pct, msg) => {
+            const _hfProgress = (pct, msg) => {
                 setProgress(pct, msg);
                 addLog(msg, 'ok');
-                if (pct >= 20) setStatus('st-extract', true);
+                if (pct >= 15) setStatus('st-extract', true);
                 if (pct >= 50) setStatus('st-narrative', true);
                 if (pct >= 65) { setStatus('st-intel', true); setStatus('st-valid', true); }
                 if (pct >= 80) { setStatus('st-evidence', true); setStatus('st-consistency', true); }
                 if (pct >= 90) setStatus('st-ui', true);
-            });
+            };
+
+            if (mediaType === 'video') {
+                addLog(isHe ? 'מנתח וידאו ישירות בדפדפן (ffmpeg.wasm + HuggingFace)...' : 'Analyzing video directly in browser (ffmpeg.wasm + HuggingFace)...', 'ok');
+                setProgress(3, isHe ? 'שלב 1: פירוק וידאו...' : 'Stage 1: decomposing video...');
+                data = await HF_CLIENT.analyzeVideo(file, token, _hfProgress);
+            } else {
+                addLog(isHe ? 'מנתח ישירות מול HuggingFace API...' : 'Analyzing directly via HuggingFace API...', 'ok');
+                setProgress(10, isHe ? 'שלב 1: חילוץ טקסט...' : 'Stage 1: extracting text...');
+                setStatus('st-extract', false);
+                data = await HF_CLIENT.analyzeImage(file, url, token, _hfProgress);
+            }
         }
 
         if (blossomUrl) {

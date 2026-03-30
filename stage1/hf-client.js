@@ -10,6 +10,7 @@ const HF_CLIENT = (() => {
     const DETR     = 'facebook/detr-resnet-50';
     const AI_CLASS = 'umm-maybe/AI-image-detector';
     const TEXT_LLM = 'deepseek-ai/DeepSeek-V3';
+    const WHISPER  = 'openai/whisper-large-v3-turbo';
 
     const VISION_MODELS = [
         'Qwen/Qwen2.5-VL-72B-Instruct',
@@ -555,10 +556,427 @@ const HF_CLIENT = (() => {
         };
     }
 
+    // ═══════════════════════════════════════════════════
+    //  WHISPER — Speech-to-Text API
+    // ═══════════════════════════════════════════════════
+
+    async function _apiWhisper(audioBytes, token) {
+        try {
+            const r = await _fetchWithTimeout(HF_INF + '/' + WHISPER, {
+                method: 'POST',
+                headers: { ..._hf(token), 'Content-Type': 'audio/flac' },
+                body: audioBytes,
+            }, 180000);
+            if (r.status !== 200) return { error: 'HTTP ' + r.status, text: '' };
+            return await r.json();
+        } catch (e) {
+            return { error: e.message, text: '' };
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  FFMPEG.WASM — Video Decomposition in browser
+    // ═══════════════════════════════════════════════════
+
+    let _ffmpeg = null;
+
+    async function _loadFFmpeg(prog) {
+        if (_ffmpeg) return _ffmpeg;
+        prog(2, 'טוען FFmpeg לדפדפן...');
+
+        // Load ffmpeg.wasm from CDN
+        if (!window.FFmpeg) {
+            await new Promise((resolve, reject) => {
+                const s1 = document.createElement('script');
+                s1.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js';
+                s1.onload = resolve;
+                s1.onerror = reject;
+                document.head.appendChild(s1);
+            });
+        }
+
+        const { FFmpeg } = window.FFmpegWASM || window;
+        const ffmpeg = new FFmpeg();
+
+        // Load core from CDN
+        await ffmpeg.load({
+            coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+            wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+        });
+
+        _ffmpeg = ffmpeg;
+        return ffmpeg;
+    }
+
+    async function _decomposeVideo(videoFile, token, prog) {
+        let ffmpeg;
+        try {
+            ffmpeg = await _loadFFmpeg(prog);
+        } catch (e) {
+            // ffmpeg.wasm failed to load — fall back to frame-from-video using canvas
+            prog(5, 'FFmpeg לא זמין - חילוץ פריים מהווידאו...');
+            return await _fallbackDecompose(videoFile, prog);
+        }
+
+        const videoBytes = await _fileToArrayBuffer(videoFile);
+        const inputName = 'input.mp4';
+        await ffmpeg.writeFile(inputName, videoBytes);
+
+        prog(8, 'מחלץ מידע מהווידאו...');
+
+        // Get duration
+        let duration = 30;
+        try {
+            await ffmpeg.exec(['-i', inputName, '-f', 'null', '-']);
+        } catch (_) {}
+
+        // Extract frames at 1fps
+        prog(10, 'מחלץ פריימים מהווידאו...');
+        try {
+            await ffmpeg.exec([
+                '-i', inputName,
+                '-vf', 'fps=1',
+                '-q:v', '3',
+                'frame_%04d.jpg'
+            ]);
+        } catch (e) {
+            prog(10, 'שגיאה בחילוץ פריימים, מנסה חלופה...');
+            return await _fallbackDecompose(videoFile, prog);
+        }
+
+        // Collect frames
+        const frames = [];
+        for (let i = 1; i <= 300; i++) {
+            const fname = 'frame_' + String(i).padStart(4, '0') + '.jpg';
+            try {
+                const data = await ffmpeg.readFile(fname);
+                if (data && data.length > 100) {
+                    frames.push({ time: i - 1, data: data });
+                }
+            } catch (_) {
+                break;
+            }
+        }
+
+        if (frames.length === 0) {
+            return await _fallbackDecompose(videoFile, prog);
+        }
+
+        duration = frames.length;
+
+        // Extract audio
+        prog(15, 'מחלץ אודיו...');
+        let audioData = null;
+        try {
+            await ffmpeg.exec([
+                '-i', inputName,
+                '-vn', '-acodec', 'flac',
+                '-ar', '16000', '-ac', '1',
+                'audio.flac'
+            ]);
+            audioData = await ffmpeg.readFile('audio.flac');
+            if (audioData && audioData.length < 500) audioData = null;
+        } catch (_) {
+            audioData = null;
+        }
+
+        // Smart frame selection (every 2-4 seconds)
+        const interval = duration <= 30 ? 2 : duration <= 120 ? 3 : 4;
+        const selected = frames.filter((_, i) => i % interval === 0).slice(0, 20);
+
+        // Cleanup
+        try {
+            await ffmpeg.deleteFile(inputName);
+            for (let i = 1; i <= frames.length; i++) {
+                await ffmpeg.deleteFile('frame_' + String(i).padStart(4, '0') + '.jpg').catch(() => {});
+            }
+            if (audioData) await ffmpeg.deleteFile('audio.flac').catch(() => {});
+        } catch (_) {}
+
+        return {
+            duration: duration,
+            hasAudio: !!audioData,
+            audioData: audioData,
+            allFrames: frames,
+            selectedFrames: selected,
+        };
+    }
+
+    // Fallback: extract a single frame using <video> + <canvas>
+    async function _fallbackDecompose(videoFile, prog) {
+        return new Promise((resolve) => {
+            const url = URL.createObjectURL(videoFile);
+            const video = document.createElement('video');
+            video.muted = true;
+            video.preload = 'auto';
+
+            const frames = [];
+            let duration = 0;
+
+            video.onloadedmetadata = () => {
+                duration = Math.floor(video.duration) || 10;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                let idx = 0;
+                const interval = duration <= 30 ? 2 : duration <= 120 ? 3 : 4;
+                const times = [];
+                for (let t = 0; t < duration; t += interval) times.push(t);
+                if (times.length === 0) times.push(0);
+                if (times.length > 15) times.length = 15;
+
+                function grabNext() {
+                    if (idx >= times.length) {
+                        URL.revokeObjectURL(url);
+                        resolve({
+                            duration: duration,
+                            hasAudio: false,
+                            audioData: null,
+                            allFrames: frames,
+                            selectedFrames: frames,
+                        });
+                        return;
+                    }
+                    video.currentTime = times[idx];
+                }
+
+                video.onseeked = () => {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    ctx.drawImage(video, 0, 0);
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            blob.arrayBuffer().then(buf => {
+                                frames.push({ time: times[idx], data: new Uint8Array(buf) });
+                                prog(10 + Math.round(idx / times.length * 10), 'מחלץ פריים ' + (idx + 1) + '/' + times.length + '...');
+                                idx++;
+                                grabNext();
+                            });
+                        } else {
+                            idx++;
+                            grabNext();
+                        }
+                    }, 'image/jpeg', 0.85);
+                };
+
+                grabNext();
+            };
+
+            video.onerror = () => {
+                URL.revokeObjectURL(url);
+                resolve({ duration: 0, hasAudio: false, audioData: null, allFrames: [], selectedFrames: [] });
+            };
+
+            video.src = url;
+        });
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  MAIN: analyzeVideo — full video pipeline in browser
+    // ═══════════════════════════════════════════════════
+
+    async function analyzeVideo(file, token, onProgress) {
+        const t0 = Date.now();
+        const prog = onProgress || (() => {});
+        const videoBytes = await _fileToArrayBuffer(file);
+        const hash = await _sha256(videoBytes);
+
+        prog(3, 'שלב 1: פירוק וידאו...');
+
+        // Step 1: Decompose
+        const decomp = await _decomposeVideo(file, token, prog);
+
+        if (decomp.selectedFrames.length === 0) {
+            throw new Error('לא הצלחתי לחלץ פריימים מהווידאו');
+        }
+
+        const meta = {
+            media_type: 'video',
+            file_size_bytes: videoBytes.length,
+            file_size_kb: Math.round(videoBytes.length / 1024 * 10) / 10,
+            sha256: hash,
+            duration_sec: decomp.duration,
+            frames_extracted: decomp.allFrames.length,
+        };
+
+        // Step 2: Speech (if audio available)
+        let speechText = '';
+        if (decomp.hasAudio && decomp.audioData) {
+            prog(20, 'שלב 2: תמלול דיבור (Whisper)...');
+            const whisperResult = await _apiWhisper(decomp.audioData, token);
+            speechText = (whisperResult.text || '').trim();
+        } else {
+            prog(20, 'שלב 2: אין אודיו — דולג...');
+        }
+
+        // Steps 3-6: Process selected frames in parallel
+        prog(25, 'שלב 3-6: ניתוח פריימים...');
+        const frameResults = [];
+        const batchSize = 3;
+        const selectedFrames = decomp.selectedFrames;
+
+        for (let i = 0; i < selectedFrames.length; i += batchSize) {
+            const batch = selectedFrames.slice(i, i + batchSize);
+            const pct = 25 + Math.round((i / selectedFrames.length) * 35);
+            prog(pct, 'מנתח פריים ' + (i + 1) + '-' + Math.min(i + batchSize, selectedFrames.length) + '/' + selectedFrames.length + '...');
+
+            const batchResults = await Promise.all(batch.map(async (frame) => {
+                const b64 = _uint8ToBase64(frame.data);
+                const [ocr, caption, objects, aiVis] = await Promise.all([
+                    _apiVision(b64, P_OCR, token),
+                    _apiVision(b64, P_CAPTION, token),
+                    _apiDetr(frame.data, token),
+                    _apiVision(b64, P_AI_VISION, token),
+                ]);
+                return {
+                    time: frame.time,
+                    ocr: (ocr && !ocr.includes('NO_TEXT')) ? ocr : '',
+                    caption: caption,
+                    objects: objects,
+                    aiVision: aiVis,
+                };
+            }));
+            frameResults.push(...batchResults);
+        }
+
+        // AI Classifier on first frame
+        let aiClassResult = { label: 'unknown' };
+        if (selectedFrames.length > 0) {
+            aiClassResult = await _apiAiClass(selectedFrames[0].data, token);
+        }
+
+        prog(62, 'שלב 7: מיזוג טקסטים...');
+
+        // Merge all text
+        const allOcr = frameResults.map(f => f.ocr).filter(Boolean).join('\n');
+        const allCaptions = frameResults.map(f => f.caption).filter(Boolean).join('\n');
+        const allObjects = [...new Set(frameResults.flatMap(f => f.objects.map(o => o.label)))];
+        const mergedText = [speechText, allOcr].filter(Boolean).join('\n\n');
+
+        const output = {
+            speech_text: speechText,
+            ocr_text: allOcr,
+            merged_text: mergedText,
+            frames: frameResults.map(f => ({
+                timestamp: _formatTime(f.time),
+                caption: f.caption,
+                objects: f.objects.map(o => o.label),
+                ai_detection: [f.aiVision],
+            })),
+            questions: [],
+            answers: [],
+            summary: allCaptions.slice(0, 500),
+        };
+
+        const pipeline = [
+            { step: 1, name: 'decompose', duration_ms: 0 },
+            { step: 2, name: 'speech_transcription', model: WHISPER, full_text: speechText },
+            { step: 3, name: 'ocr_extraction', model: VISION_MODELS[0], full_text: allOcr },
+            { step: 4, name: 'object_detection', model: DETR, unique_objects: allObjects.map(l => ({ label: l })) },
+            { step: 5, name: 'image_captioning', model: VISION_MODELS[0] },
+            { step: 6, name: 'ai_detection', models: [VISION_MODELS[0], AI_CLASS] },
+        ];
+
+        // Narrative Classification
+        prog(65, 'שלב 8: סיווג נרטיב...');
+        const narrPrompt =
+            'Analyze the following VIDEO content data:\n\n' +
+            'Speech Text: ' + (speechText || '(none)') + '\n' +
+            'OCR Text: ' + (allOcr || '(none)') + '\n' +
+            'Frame Descriptions: ' + allCaptions.slice(0, 1000) + '\n' +
+            'Objects: ' + allObjects.join(', ') + '\n\n' +
+            P_NARRATIVE_CLASS;
+        const narrRaw = await _apiChat(narrPrompt, token, 'You are a Narrative Intelligence Classifier.', 512);
+        const narrativeResult = _parseJson(narrRaw);
+
+        // Scoring
+        const scores = _computeScores(output, aiClassResult, narrativeResult);
+
+        // Intelligence Analysis
+        prog(72, 'שלב 9: ניתוח מודיעיני...');
+        const intelPrompt =
+            'Analyze the following VIDEO content:\n\n' +
+            '== META ==\nType: video\nDuration: ' + decomp.duration + 's\nFrames: ' + decomp.allFrames.length + '\nSize: ' + meta.file_size_kb + ' KB\n\n' +
+            '== SPEECH TEXT ==\n' + (speechText || '(no speech found)') + '\n\n' +
+            '== OCR TEXT ==\n' + (allOcr || '(no text found)') + '\n\n' +
+            '== FRAME DESCRIPTIONS ==\n' + allCaptions.slice(0, 1500) + '\n\n' +
+            '== OBJECTS DETECTED ==\n' + allObjects.join(', ') + '\n\n' +
+            '== AI DETECTION ==\nClassifier: ' + JSON.stringify(aiClassResult) + '\n\n' +
+            '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + '\n\n' +
+            P_INTELLIGENCE;
+        const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
+        const intelligence = _parseJson(intelRaw);
+
+        // UI Adapter
+        prog(82, 'שלב 10: עיבוד סופי...');
+        const uiPrompt =
+            'Based on the following VIDEO analysis, produce the final UI output JSON.\n\n' +
+            '== SPEECH ==\n' + (speechText || '(none)').slice(0, 500) + '\n' +
+            '== FRAME DESCRIPTIONS ==\n' + allCaptions.slice(0, 500) + '\n' +
+            '== INTELLIGENCE ==\n' + JSON.stringify(intelligence) + '\n' +
+            '== NARRATIVE ==\n' + JSON.stringify(narrativeResult) + '\n' +
+            '== SCORES (system computed) ==\n' + JSON.stringify(scores) + '\n\n' +
+            'IMPORTANT: The ui_metrics values MUST use the scores provided above exactly. Do NOT change them.\n' +
+            'Your ONLY creative job is the ui_summary text (Hebrew, 2-3 sentences), ui_tags, ui_flags, verified_findings, removed_claims.\n\n' +
+            P_UI_ADAPTER;
+        const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 1200);
+        const uiData = _parseJson(uiRaw);
+
+        uiData.ui_metrics = {
+            ...(uiData.ui_metrics || {}),
+            truth_score: scores.truth_score,
+            authenticity_score: scores.authenticity_score,
+            ai_probability: scores.ai_probability,
+            narrative: scores.narrative,
+            risk_level: scores.risk_level,
+            confidence_level: scores.confidence_level,
+        };
+        uiData.satire_detected = scores.satire_detected;
+        uiData.factual_mode = scores.factual_mode;
+        uiData.content_type = scores.content_type;
+
+        prog(95, 'סיום...');
+        const totalMs = Date.now() - t0;
+
+        return {
+            status: 'ok',
+            meta: meta,
+            pipeline: pipeline,
+            output: output,
+            scores: scores,
+            narrative: narrativeResult,
+            intelligence: intelligence,
+            research: {},
+            validation: { is_valid: true, issues: [] },
+            evidence_filter: {},
+            ui_data: uiData,
+            consistency: scores,
+            total_duration_ms: totalMs,
+        };
+    }
+
+    // ── Uint8Array to base64 ──
+    function _uint8ToBase64(u8) {
+        let binary = '';
+        const chunkSize = 32768;
+        for (let i = 0; i < u8.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, u8.subarray(i, i + chunkSize));
+        }
+        return btoa(binary);
+    }
+
+    // ── Format seconds to MM:SS ──
+    function _formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
     // ── Public API ──
     return {
         verifyToken,
         analyzeImage,
+        analyzeVideo,
+        isFFmpegLoaded: () => !!_ffmpeg,
     };
 
 })();
