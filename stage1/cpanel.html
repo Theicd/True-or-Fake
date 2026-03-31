@@ -116,6 +116,20 @@ tr.detail-row td{padding:0;border-top:none}
 .cost-total .ct-label{color:#94a3b8;font-size:.78rem}
 .cost-total .ct-val{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:800;color:#fbbf24}
 .no-cost-msg{color:#555;font-size:.78rem}
+.detail-section{margin-top:12px}
+.detail-section h4{color:#e2e8f0;margin:0 0 8px;font-size:.82rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:6px}
+.valid-row{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-bottom:4px}
+.valid-lbl{color:#94a3b8;font-size:.75rem}
+.valid-val{font-size:.78rem;font-weight:600}
+.valid-issues li{color:#b47832;font-size:.75rem;margin:2px 0}
+.pipe-step-row{display:flex;gap:12px;align-items:center;padding:5px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-bottom:3px;font-size:.75rem}
+.pipe-name{color:#e2e8f0;font-weight:600;min-width:120px}
+.pipe-model{color:#64748b;font-family:'JetBrains Mono',monospace;font-size:.7rem}
+.pipe-ms{color:#818cf8;font-family:'JetBrains Mono',monospace;font-size:.7rem}
+.raw-json-wrap{max-height:350px;overflow:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:10px 14px}
+.raw-json-wrap pre{margin:0;color:#94a3b8;font-size:.68rem;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all}
+.btn-load-json{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:6px 14px;font-size:.75rem;cursor:pointer;font-weight:600}
+.btn-load-json:hover{background:rgba(99,102,241,.25)}
 
 /* ── Loading / Empty ── */
 .loading-row td,.empty-row td{text-align:center;padding:32px;color:var(--muted)}
@@ -594,6 +608,53 @@ function _buildCostDetail(ec) {
   return `<div class="cost-detail"><h4>💰 פירוט עלות ניתוח</h4><div class="cost-grid">${items || '<div class="no-cost-msg">אין פירוט</div>'}</div><div class="cost-total"><span class="ct-label">סה״כ (${totalCalls} קריאות API)</span><span class="ct-val">$${totalStr}</span></div></div>`;
 }
 
+function _buildValidationDetail(valid) {
+  if (!valid || !Object.keys(valid).length) return '';
+  let h = '<div class="detail-section"><h4>✅ אימות תוצאות</h4>';
+  const isValid = valid.is_valid;
+  h += `<div class="valid-row"><span class="valid-lbl">תקף</span><span class="valid-val" style="color:${isValid ? '#009664' : '#ff5555'}">${isValid ? '✅ תקין' : '❌ לא תקין'}</span></div>`;
+  if (valid.corrected_confidence) {
+    h += `<div class="valid-row"><span class="valid-lbl">ביטחון מתוקן</span><span class="valid-val" style="color:#818cf8">${esc(valid.corrected_confidence)}</span></div>`;
+  }
+  if (valid.issues?.length) {
+    h += '<ul class="valid-issues">';
+    valid.issues.forEach(i => { h += '<li>' + esc(i) + '</li>'; });
+    h += '</ul>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function _buildPipelineDetail(pipeline) {
+  if (!pipeline?.length) return '';
+  let h = '<div class="detail-section"><h4>⚙️ צינור עיבוד</h4>';
+  pipeline.forEach((s, i) => {
+    const name = s.name || s.step || 'Step ' + i;
+    const model = s.model || (s.models ? s.models.join(', ') : '');
+    const ms = s.duration_ms || 0;
+    h += '<div class="pipe-step-row">';
+    h += `<span class="pipe-name">${esc(name)}</span>`;
+    if (model) h += `<span class="pipe-model">${esc(model)}</span>`;
+    if (ms) h += `<span class="pipe-ms">${ms}ms</span>`;
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function _buildJsonButton(reportId) {
+  return `<div class="detail-section"><h4>{ } JSON גולמי</h4><button class="btn-load-json" data-report-id="${esc(reportId)}">🔽 טען JSON מלא</button><div class="raw-json-wrap" style="display:none"><pre></pre></div></div>`;
+}
+
+function _buildDetailPanel(rep) {
+  let h = '';
+  h += _buildCostDetail(rep.estimatedCost);
+  h += _buildValidationDetail(rep.validation);
+  h += _buildPipelineDetail(rep.pipeline);
+  h += _buildJsonButton(rep.id);
+  return h || '<div class="no-cost-msg">אין נתונים נוספים לניתוח זה</div>';
+}
+
 function renderTable(){
   const tbody = document.getElementById('reportsTbody');
   if(!_reports.length){
@@ -620,17 +681,41 @@ function renderTable(){
       <td><span class="owner-tag">${esc((rep.owner||'').slice(0,8)+'…')}</span></td>
       <td><button class="btn-del" data-id="${esc(rep.id)}" title="מחק דוח זה">🗑</button></td>
     </tr>`;
-    h += `<tr class="detail-row" data-detail-idx="${i}"><td colspan="11">${_buildCostDetail(rep.estimatedCost)}</td></tr>`;
+    h += `<tr class="detail-row" data-detail-idx="${i}"><td colspan="11">${_buildDetailPanel(rep)}</td></tr>`;
   });
   tbody.innerHTML = h;
 
-  // ── Toggle cost detail rows ──
+  // ── Toggle detail rows ──
   tbody.querySelectorAll('.report-row').forEach(row => {
     row.addEventListener('click', (e) => {
       if (e.target.closest('.btn-del')) return;
       const idx = row.dataset.idx;
       const detail = tbody.querySelector(`tr.detail-row[data-detail-idx="${idx}"]`);
       if (detail) detail.classList.toggle('open');
+    });
+  });
+
+  // ── Load JSON on demand ──
+  tbody.querySelectorAll('.btn-load-json').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const rid = btn.dataset.reportId;
+      const wrap = btn.nextElementSibling;
+      if (wrap.style.display !== 'none') { wrap.style.display = 'none'; btn.textContent = '🔽 טען JSON מלא'; return; }
+      btn.textContent = '⏳ טוען...';
+      btn.disabled = true;
+      try {
+        const r = await apiFetch('/api/reports/' + encodeURIComponent(rid), {headers:{Authorization:'Bearer '+_session}});
+        if (!r.ok) { btn.textContent = '❌ שגיאה'; btn.disabled = false; return; }
+        const data = await r.json();
+        const fd = data.fullData || data;
+        wrap.querySelector('pre').textContent = JSON.stringify(fd, null, 2);
+        wrap.style.display = 'block';
+        btn.textContent = '🔼 הסתר JSON';
+      } catch(err) {
+        btn.textContent = '❌ שגיאת רשת';
+      }
+      btn.disabled = false;
     });
   });
 

@@ -509,11 +509,17 @@ async def admin_get_reports(authorization: str = Header("")):
     slim = []
     for r in reports:
         row = {k: v for k, v in r.items() if k != "fullData"}
+        fd = r.get("fullData") or {}
         # backfill estimatedCost from fullData if missing
         if not row.get("estimatedCost"):
-            fd_cost = (r.get("fullData") or {}).get("estimated_cost")
+            fd_cost = fd.get("estimated_cost")
             if fd_cost:
                 row["estimatedCost"] = fd_cost
+        # include validation & pipeline for CPANEL detail view
+        if fd.get("validation"):
+            row["validation"] = fd["validation"]
+        if fd.get("pipeline"):
+            row["pipeline"] = fd["pipeline"]
         slim.append(row)
     return JSONResponse({"reports": slim, "total": len(reports)})
 

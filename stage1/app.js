@@ -1449,11 +1449,9 @@ function renderResult(data) {
         evSection.classList.add('hidden');
     }
 
-    // ── Intel / Validation / Pipeline ──
+    // ── Intel ──
     renderIntel(intel);
-    renderValidation(valid);
-    renderPipeline(data.pipeline || []);
-    $('rawJson').textContent = JSON.stringify(data, null, 2);
+    // validation, pipeline, raw JSON moved to CPANEL admin panel
 }
 
 // ═══════════════════════════════════════════════
@@ -1491,6 +1489,7 @@ function renderIntel(intel) {
 //  RENDER VALIDATION — אימות תוצאות
 // ═══════════════════════════════════════════════
 function renderValidation(valid) {
+    const el = $('validContent'); if (!el) return;
     if (!valid || !Object.keys(valid).length) {
         $('validContent').innerHTML = '<p style="color:#6b7d94">—</p>';
         return;
@@ -1509,7 +1508,8 @@ function renderValidation(valid) {
 //  RENDER PIPELINE — צינור עיבוד
 // ═══════════════════════════════════════════════
 function renderPipeline(pipeline) {
-    if (!pipeline?.length) { $('pipeContent').innerHTML = ''; return; }
+    const el = $('pipeContent'); if (!el) return;
+    if (!pipeline?.length) { el.innerHTML = ''; return; }
     let h = '';
     pipeline.forEach((s, i) => {
         const name = s.name || s.step || 'Step ' + i;
