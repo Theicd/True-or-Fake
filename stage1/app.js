@@ -1491,7 +1491,7 @@ function renderIntel(intel) {
 function renderValidation(valid) {
     const el = $('validContent'); if (!el) return;
     if (!valid || !Object.keys(valid).length) {
-        $('validContent').innerHTML = '<p style="color:#6b7d94">—</p>';
+        el.innerHTML = '<p style="color:#6b7d94">—</p>';
         return;
     }
     const isHe = currentLang === 'he';
@@ -1501,7 +1501,7 @@ function renderValidation(valid) {
         valid.issues.forEach(i => { h += '<li style="color:#b47832">' + esc(i) + '</li>'; });
         h += '</ul>';
     }
-    $('validContent').innerHTML = h;
+    el.innerHTML = h;
 }
 
 // ═══════════════════════════════════════════════
@@ -1521,7 +1521,7 @@ function renderPipeline(pipeline) {
         if (ms) h += '<span class="pipe-ms">' + ms + 'ms</span>';
         h += '</div></div>';
     });
-    $('pipeContent').innerHTML = h;
+    el.innerHTML = h;
 }
 
 // ═══════════════════════════════════════════════
