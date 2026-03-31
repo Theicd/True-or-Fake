@@ -344,19 +344,66 @@
         return event.id;
     }
 
+    // NIP-09: Publish a kind 5 deletion event to remove a relay event
+    async function deleteRelayEvent(eventId) {
+        if (!eventId) return null;
+        const nt = getNostrTools();
+        if (!nt || typeof nt.finalizeEvent !== 'function') throw new Error('finalize-event-unavailable');
+        const { privateKey, publicKey } = await ensureKeys();
+
+        const draft = {
+            kind: 5,
+            created_at: Math.floor(Date.now() / 1000),
+            content: '',
+            pubkey: publicKey,
+            tags: [
+                ['e', eventId],
+                ['t', 'true-or-fake'],
+            ],
+        };
+
+        const signed = nt.finalizeEvent(draft, privateKey);
+        const pool = getPool();
+        await Promise.any(pool.publish(relayUrls, signed));
+        // Track locally so UI can hide immediately
+        if (!App._deletedEventIds) App._deletedEventIds = new Set();
+        App._deletedEventIds.add(eventId);
+        return signed.id;
+    }
+
     async function loadRelayReports(limit = 25) {
         const nt = getNostrTools();
         if (!nt) return [];
         try {
             const pool = getPool();
-            const events = await pool.querySync(relayUrls, {
-                kinds: [1],
-                '#t': ['analysis-report'],
-                limit,
-            });
+
+            // Fetch reports and deletion events in parallel
+            const [events, deletionEvents] = await Promise.all([
+                pool.querySync(relayUrls, {
+                    kinds: [1],
+                    '#t': ['analysis-report'],
+                    limit,
+                }),
+                pool.querySync(relayUrls, {
+                    kinds: [5],
+                    '#t': ['true-or-fake'],
+                    limit: 200,
+                }),
+            ]);
+
+            // Build set of deleted event IDs from kind 5 events
+            const deletedIds = App._deletedEventIds ? new Set(App._deletedEventIds) : new Set();
+            for (const del of (deletionEvents || [])) {
+                for (const tag of (del.tags || [])) {
+                    if (tag[0] === 'e' && tag[1]) deletedIds.add(tag[1]);
+                }
+            }
+            App._deletedEventIds = deletedIds;
 
             const out = [];
             for (const ev of (events || [])) {
+                // Skip deleted events
+                if (deletedIds.has(ev.id)) continue;
                 try {
                     const parsed = JSON.parse(ev.content || '{}');
                     if (parsed.app !== 'true-or-fake' || parsed.type !== 'analysis-report' || !parsed.report) continue;
@@ -366,6 +413,7 @@
                         relay_saved: true,
                         relay_event_id: ev.id,
                         owner: String(ev.pubkey || '').slice(0, 14),
+                        fullData: report.fullData || null,
                     });
                 } catch (_) {
                     // invalid event format
@@ -395,6 +443,7 @@
         loadComments,
         publishProfile,
         loadRelayReports,
+        deleteRelayEvent,
     });
 
     // Keep exposed arrays in sync for external code.

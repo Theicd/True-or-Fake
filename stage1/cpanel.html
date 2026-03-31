@@ -160,11 +160,6 @@ tr.detail-row td{padding:0;border-top:none}
       <input type="checkbox" id="rememberCreds" checked>
       <span>זכור שם משתמש וסיסמה במחשב זה</span>
     </label>
-    <div class="field" id="apiBaseField" style="display:none">
-      <label>כתובת שרת API <small>(אופציונלי)</small></label>
-      <input type="text" id="cpApiBase" placeholder="השאר ריק למצב Relay" dir="ltr" style="font-size:.82rem">
-      <small style="color:#64748b;font-size:.7rem">השאר ריק לחיבור לשרת חיצוני. בלי שרת — המערכת תטען דוחות מרשת Relay בלבד</small>
-    </div>
     <button class="btn-login" id="btnLogin">כניסה</button>
     <div class="err-msg" id="loginErr"></div>
   </div>
@@ -428,13 +423,7 @@ function updateRelayStorageStats(){
 document.getElementById('btnLogin').addEventListener('click', doLogin);
 document.getElementById('cpPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
-// Show API base field on GitHub Pages
-if(isGithubPagesHost()){
-  const abf = document.getElementById('apiBaseField');
-  if(abf) abf.style.display = 'block';
-  const abInput = document.getElementById('cpApiBase');
-  if(abInput) abInput.value = getApiBase() || '';
-}
+// On GitHub Pages, auto-detect relay mode (no API base field needed)
 
 loadSavedCredentials();
 
@@ -446,12 +435,6 @@ async function doLogin(){
   err.textContent = '';
   if(!u||!p){ err.textContent='נא למלא את כל השדות'; return; }
   document.getElementById('btnLogin').disabled = true;
-
-  // Save API base from input if provided
-  if(isGithubPagesHost()){
-    const abVal = normalizeApiBase((document.getElementById('cpApiBase')||{}).value||'');
-    if(abVal) localStorage.setItem(API_BASE_KEY, abVal);
-  }
 
   const hasServer = !!getApiBase() || !isGithubPagesHost();
 
@@ -830,7 +813,17 @@ function renderTable(){
       if(!confirm('למחוק דוח זה?')) return;
       btn.disabled = true;
       if(_relayMode){
-        // Relay mode: can't delete from relay, just remove from view
+        // Relay mode: publish NIP-09 kind 5 deletion event
+        const rep = _reports.find(x=>x.id===id);
+        const relayEventId = rep && rep.relay_event_id;
+        if(relayEventId){
+          try{
+            const net = window.TrueOrFakeNet;
+            if(net && typeof net.deleteRelayEvent === 'function'){
+              await net.deleteRelayEvent(relayEventId);
+            }
+          }catch(e){ console.warn('Relay delete error', e); }
+        }
         _reports = _reports.filter(x=>x.id!==id);
         renderTable(); loadStats();
         return;
