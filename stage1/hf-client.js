@@ -34,10 +34,11 @@ const HF_CLIENT = (() => {
     const P_CAPTION =
         'Describe this image in detail. Include:\n' +
         '- What is shown (people, objects, scene)\n' +
-        '- Text visible on screen\n' +
+        '- Text visible on screen (in original language)\n' +
         '- Setting/environment\n' +
         '- Notable visual elements\n' +
-        'Be factual and specific. Output in the language of the visible text, or English.';
+        'Be factual and specific. Write your description in HEBREW (עברית).\n' +
+        'If the visible text is in another language, include the original text AND its Hebrew translation.';
 
     const P_AI_VISION =
         'Analyze this image for signs of AI generation or manipulation.\n' +
@@ -138,7 +139,8 @@ const HF_CLIENT = (() => {
         '- Missing context\n' +
         '- Visual anomalies\n' +
         '- Claims that need verification\n' +
-        'Return JSON array: ["question1", "question2", ...]';
+        'Write questions in HEBREW (עברית) regardless of input language.\n' +
+        'Return JSON array: ["שאלה 1", "שאלה 2", ...]';
 
     const P_SUMMARY =
         'Summarize the content of this video based on all collected data below.\n' +
@@ -148,7 +150,8 @@ const HF_CLIENT = (() => {
         '- People and their actions\n' +
         '- Text/speech content\n' +
         'NO assumptions. NO judgments. Keep it factual and structured.\n' +
-        'Write in the main language of the content.';
+        'IMPORTANT: Always write the summary in HEBREW (עברית), regardless of the input language.\n' +
+        'If the input text is in another language, translate your summary to Hebrew.';
 
 
 
@@ -189,42 +192,6 @@ const HF_CLIENT = (() => {
         '  "removed_claims": ["טענה שהוסרה בעברית 1", "..."],\n' +
         '  "evidence_quality": "Strong | Moderate | Weak | Insufficient"\n' +
         '}';
-
-    // ── Language names for prompt injection ──
-    const LANG_NAMES = {
-        he: 'Hebrew (עברית)', en: 'English', ru: 'Russian (русский)', ar: 'Arabic (العربية)',
-        fr: 'French (français)', es: 'Spanish (español)', de: 'German (Deutsch)', pt: 'Portuguese (português)',
-        zh: 'Chinese (中文)', ja: 'Japanese (日本語)', ko: 'Korean (한국어)', tr: 'Turkish (Türkçe)',
-        hi: 'Hindi (हिन्दी)', it: 'Italian (italiano)', uk: 'Ukrainian (українська)', pl: 'Polish (polski)',
-    };
-    const RTL_LANGS = ['he', 'ar'];
-
-    function _langName(code) { return LANG_NAMES[code] || 'English'; }
-
-    // Build language-aware versions of the prompts
-    function _pIntelligence(lang) {
-        const ln = _langName(lang);
-        return P_INTELLIGENCE.replace(/HEBREW \(עברית\)/g, ln).replace(/in HEBREW/g, 'in ' + ln);
-    }
-    function _pUiAdapter(lang) {
-        const ln = _langName(lang);
-        return P_UI_ADAPTER
-            .replace('Hebrew summary', ln + ' summary')
-            .replace('in HEBREW', 'in ' + ln)
-            .replace('סיכום בעברית — 2-3 משפטים', 'Summary in ' + ln + ' — 2-3 sentences');
-    }
-    function _pSummary(lang) {
-        const ln = _langName(lang);
-        return P_SUMMARY.replace('Write in the main language of the content.', 'Write the summary in ' + ln + '.');
-    }
-    function _pValidation(lang) {
-        const ln = _langName(lang);
-        return P_VALIDATION.replace(/HEBREW \(עברית\)/g, ln).replace(/in HEBREW/g, 'in ' + ln);
-    }
-    function _pEvidenceFilter(lang) {
-        const ln = _langName(lang);
-        return P_EVIDENCE_FILTER.replace(/HEBREW \(עברית\)/g, ln).replace(/in HEBREW/g, 'in ' + ln);
-    }
 
     // ── Helpers ──
 
@@ -534,10 +501,9 @@ const HF_CLIENT = (() => {
     //  MAIN: analyzeImage — full pipeline in the browser
     // ═══════════════════════════════════════════════════
 
-    async function analyzeImage(file, url, token, onProgress, lang) {
+    async function analyzeImage(file, url, token, onProgress) {
         const t0 = Date.now();
         const prog = onProgress || (() => {});
-        const _lang = lang || 'he';
         let b64 = null, imgBytes = null;
         const isUrlMode = !file && !!url;
 
@@ -576,6 +542,18 @@ const HF_CLIENT = (() => {
         prog(40, 'שלב 5: סיווג נרטיב...');
 
         const ocrText = (ocrR && !ocrR.includes('NO_TEXT')) ? ocrR : '';
+
+        // ── Translate OCR if needed ──
+        let imgOcrOriginal = ocrText;
+        let imgOcrTranslated = false;
+        if (ocrText && ocrText.length >= 10 && !_isHebrew(ocrText)) {
+            prog(42, 'מתרגם טקסט OCR לעברית...');
+            const ocrTr = await _translateToHebrew(ocrText, token);
+            imgOcrTranslated = ocrTr.was_translated;
+            if (ocrTr.was_translated) {
+                imgOcrOriginal = ocrText;
+            }
+        }
 
         const output = {
             speech_text: '',
@@ -625,7 +603,7 @@ const HF_CLIENT = (() => {
             '== OBJECTS DETECTED ==\n' + objR.map(d => d.label + ' (' + d.score + ')').join(', ') + '\n\n' +
             '== AI DETECTION ==\nVision: ' + aivR + '\nClassifier: ' + JSON.stringify(aicR) + '\n\n' +
             '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + ' (confidence: ' + (narrativeResult.confidence || 0) + ')\n\n' +
-            _pIntelligence(_lang);
+            P_INTELLIGENCE;
 
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
@@ -651,7 +629,7 @@ const HF_CLIENT = (() => {
             'Caption: ' + capR.slice(0, 300) + '\n\n' +
             'ANALYSIS OUTPUT:\n' +
             JSON.stringify({ intelligence, narrative: narrativeResult, scores }).slice(0, 1500) + '\n\n' +
-            _pValidation(_lang);
+            P_VALIDATION;
         const validRaw = await _apiChat(validPrompt, token, 'You are a validation system.', 512);
         const validation = _parseJson(validRaw);
         if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
@@ -681,7 +659,7 @@ const HF_CLIENT = (() => {
             'ANALYSIS:\n' +
             JSON.stringify({ intelligence, narrative: narrativeResult }).slice(0, 1000) + '\n\n' +
             'VALIDATION ISSUES:\n' + JSON.stringify(validation.issues) + '\n\n' +
-            _pEvidenceFilter(_lang);
+            P_EVIDENCE_FILTER;
         const evFilterRaw = await _apiChat(evFilterPrompt, token, 'You are an evidence filter system.', 800);
         const evidenceFilter = _parseJson(evFilterRaw);
 
@@ -694,7 +672,7 @@ const HF_CLIENT = (() => {
             '== INTELLIGENCE ==\n' + JSON.stringify(intelligence).slice(0, 500) + '\n' +
             '== NARRATIVE ==\n' + JSON.stringify(narrativeResult).slice(0, 300) + '\n' +
             '== EVIDENCE FILTER ==\n' + JSON.stringify(evidenceFilter).slice(0, 300) + '\n\n' +
-            _pUiAdapter(_lang);
+            P_UI_ADAPTER;
 
         const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 600);
         const uiParsed = _parseJson(uiRaw);
@@ -735,7 +713,6 @@ const HF_CLIENT = (() => {
             validation: validation,
             evidence_filter: evidenceFilter,
             ui_data: uiData,
-            report_lang: _lang,
             consistency: {
                 ...scores,
                 ui_summary: uiData.ui_summary,
@@ -746,6 +723,42 @@ const HF_CLIENT = (() => {
             },
             total_duration_ms: totalMs,
         };
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  TRANSLATION — Auto-detect & translate to Hebrew
+    // ═══════════════════════════════════════════════════
+
+    function _isHebrew(text) {
+        if (!text) return true;
+        const hebrewChars = (text.match(/[\u0590-\u05FF]/g) || []).length;
+        const totalLetters = (text.match(/[\p{L}]/gu) || []).length;
+        if (totalLetters === 0) return true;
+        return hebrewChars / totalLetters > 0.3;
+    }
+
+    async function _translateToHebrew(text, token) {
+        if (!text || text.length < 10) return { translated: text, detected_language: 'unknown', was_translated: false };
+        if (_isHebrew(text)) return { translated: text, detected_language: 'he', was_translated: false };
+        try {
+            const prompt =
+                'Translate the following text to Hebrew (עברית).\n' +
+                'RULES:\n' +
+                '- Translate ALL text faithfully to Hebrew\n' +
+                '- Preserve the meaning, tone, and important terms\n' +
+                '- For technical terms or proper nouns, keep original in parentheses\n' +
+                '- First line of output: detected language code (e.g. ru, en, ar, fr)\n' +
+                '- Rest of output: the Hebrew translation\n\n' +
+                'TEXT TO TRANSLATE:\n' + text.slice(0, 3000);
+            const raw = await _apiChat(prompt, token, 'You are a professional translator. Output ONLY the language code on line 1, then the Hebrew translation.', 1500);
+            if (!raw) return { translated: text, detected_language: 'unknown', was_translated: false };
+            const lines = raw.trim().split('\n');
+            const langCode = (lines[0] || '').trim().toLowerCase().replace(/[^a-z]/g, '').slice(0, 5);
+            const translated = lines.slice(1).join('\n').trim() || text;
+            return { translated, detected_language: langCode || 'unknown', was_translated: true };
+        } catch (e) {
+            return { translated: text, detected_language: 'unknown', was_translated: false };
+        }
     }
 
     // ═══════════════════════════════════════════════════
@@ -772,23 +785,6 @@ const HF_CLIENT = (() => {
             return await r.json();
         } catch (e) {
             return { error: e.message, text: '' };
-        }
-    }
-
-    // ═══════════════════════════════════════════════════
-    //  TRANSLATE — Translate text to target language via LLM
-    // ═══════════════════════════════════════════════════
-
-    async function _translateText(text, targetLang, token) {
-        if (!text || !text.trim() || targetLang === 'en') return text; // English is default, no translation needed for raw data
-        const ln = _langName(targetLang);
-        const prompt = 'Translate the following text to ' + ln + '. ' +
-            'Preserve meaning and tone. If the text is already in ' + ln + ', return it as-is. ' +
-            'Return ONLY the translated text, no explanations.\n\n' + text.slice(0, 3000);
-        try {
-            return await _apiChat(prompt, token, 'You are a professional translator.', 1500);
-        } catch (_) {
-            return text;
         }
     }
 
@@ -1126,10 +1122,9 @@ const HF_CLIENT = (() => {
     //  MAIN: analyzeVideo — full video pipeline in browser
     // ═══════════════════════════════════════════════════
 
-    async function analyzeVideo(file, token, onProgress, lang) {
+    async function analyzeVideo(file, token, onProgress) {
         const t0 = Date.now();
         const prog = onProgress || (() => {});
-        const _lang = lang || 'he';
         const videoBytes = await _fileToArrayBuffer(file);
         const hash = await _sha256(videoBytes);
 
@@ -1183,11 +1178,18 @@ const HF_CLIENT = (() => {
             prog(20, 'שלב 2: אין אודיו — דולג...');
         }
 
-        // ═══ Step 2b: Translate speech to user language ═══
-        let speechTranslated = '';
-        if (speechText) {
-            prog(26, 'תרגום דיבור לשפת הממשק...');
-            speechTranslated = await _translateText(speechText, _lang, token);
+        // ═══ Step 2b: Translate speech to Hebrew if needed ═══
+        let speechOriginal = speechText;
+        let speechLang = 'he';
+        let speechWasTranslated = false;
+        if (speechText && speechText.length >= 10) {
+            prog(26, 'בודק שפת דיבור ומתרגם במידת הצורך...');
+            const tr = await _translateToHebrew(speechText, token);
+            speechLang = tr.detected_language;
+            speechWasTranslated = tr.was_translated;
+            if (tr.was_translated) {
+                speechText = tr.translated;
+            }
         }
 
         // ═══ Steps 3-6: Process frames (parallel per batch) ═══
@@ -1251,10 +1253,30 @@ const HF_CLIENT = (() => {
                 }
             }
         }
+        // ═══ Step 6b: Translate OCR text to Hebrew if needed ═══
+        let ocrOriginal = allOcr;
+        let ocrWasTranslated = false;
+        if (allOcr && allOcr.length >= 10 && !_isHebrew(allOcr)) {
+            prog(56, 'מתרגם טקסט OCR לעברית...');
+            const ocrTr = await _translateToHebrew(allOcr, token);
+            ocrWasTranslated = ocrTr.was_translated;
+            if (ocrTr.was_translated) {
+                allOcr = ocrTr.translated;
+            }
+        }
+
         // Build merged text exactly like backend step7_text_merge
         let mergedText = '';
-        if (speechText) mergedText += '[דיבור] ' + speechText + '\n\n';
-        if (allOcr) mergedText += '[OCR] ' + allOcr + '\n\n';
+        if (speechText) {
+            mergedText += '[דיבור] ' + speechText + '\n';
+            if (speechWasTranslated) mergedText += '[דיבור מקורי - ' + speechLang + '] ' + speechOriginal + '\n';
+            mergedText += '\n';
+        }
+        if (allOcr) {
+            mergedText += '[OCR] ' + allOcr + '\n';
+            if (ocrWasTranslated) mergedText += '[OCR מקורי] ' + ocrOriginal + '\n';
+            mergedText += '\n';
+        }
         if (allCaptions) mergedText += '[תיאורים] ' + allCaptions;
         mergedText = mergedText.trim();
 
@@ -1311,13 +1333,18 @@ const HF_CLIENT = (() => {
             'OBJECTS: ' + allObjects.map(o => o.label).join(', ') + '\n\n' +
             'INVESTIGATION Q&A:\n' + qaSection.slice(0, 1500) + '\n\n' +
             'Write a factual summary.';
-        const summaryRaw = await _apiChat(summaryPrompt, token, _pSummary(_lang), 1200);
+        const summaryRaw = await _apiChat(summaryPrompt, token, P_SUMMARY, 1200);
         const summaryText = summaryRaw.trim();
 
         // Build output structure matching backend
         const output = {
             speech_text: speechText,
+            speech_original: speechWasTranslated ? speechOriginal : undefined,
+            speech_language: speechLang,
+            speech_translated: speechWasTranslated,
             ocr_text: allOcr,
+            ocr_original: ocrWasTranslated ? ocrOriginal : undefined,
+            ocr_translated: ocrWasTranslated,
             merged_text: mergedText,
             frames: frameResults.map(f => ({
                 timestamp: _formatTime(f.time),
@@ -1334,7 +1361,7 @@ const HF_CLIENT = (() => {
 
         const pipeline = [
             { step: 1, name: 'decompose', duration_ms: 0 },
-            { step: 2, name: 'speech_transcription', model: WHISPER, segments: speechSegments, full_text: speechText },
+            { step: 2, name: 'speech_transcription', model: WHISPER, segments: speechSegments, full_text: speechText, original_text: speechWasTranslated ? speechOriginal : undefined, detected_language: speechLang, was_translated: speechWasTranslated },
             { step: 3, name: 'ocr_extraction', model: VISION_MODELS[0], full_text: allOcr },
             { step: 4, name: 'object_detection', model: DETR, unique_objects: allObjects },
             { step: 5, name: 'image_captioning', model: VISION_MODELS[0] },
@@ -1375,7 +1402,7 @@ const HF_CLIENT = (() => {
             '== AI DETECTION ==\nClassifier: ' + JSON.stringify(aiClassResult) + '\n\n' +
             '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + ' (confidence: ' + (narrativeResult.confidence || 0) + ')\n\n' +
             '== INVESTIGATION Q&A ==\n' + qaSection.slice(0, 800) + '\n\n' +
-            _pIntelligence(_lang);
+            P_INTELLIGENCE;
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
 
@@ -1402,7 +1429,7 @@ const HF_CLIENT = (() => {
             'Summary: ' + summaryText.slice(0, 300) + '\n\n' +
             'ANALYSIS OUTPUT:\n' +
             JSON.stringify({ intelligence, narrative: narrativeResult, scores }).slice(0, 1500) + '\n\n' +
-            _pValidation(_lang);
+            P_VALIDATION;
         const validRaw = await _apiChat(validPrompt, token, 'You are a validation system.', 512);
         const validation = _parseJson(validRaw);
         if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
@@ -1433,7 +1460,7 @@ const HF_CLIENT = (() => {
             'ANALYSIS:\n' +
             JSON.stringify({ intelligence: intelligence, narrative: narrativeResult }).slice(0, 1000) + '\n\n' +
             'VALIDATION ISSUES:\n' + JSON.stringify(validation.issues) + '\n\n' +
-            _pEvidenceFilter(_lang);
+            P_EVIDENCE_FILTER;
         const evFilterRaw = await _apiChat(evFilterPrompt, token, 'You are an evidence filter system.', 800);
         const evidenceFilter = _parseJson(evFilterRaw);
 
@@ -1446,7 +1473,7 @@ const HF_CLIENT = (() => {
             '== INTELLIGENCE ==\n' + JSON.stringify(intelligence).slice(0, 500) + '\n' +
             '== NARRATIVE ==\n' + JSON.stringify(narrativeResult).slice(0, 300) + '\n' +
             '== EVIDENCE FILTER ==\n' + JSON.stringify(evidenceFilter).slice(0, 300) + '\n\n' +
-            _pUiAdapter(_lang);
+            P_UI_ADAPTER;
         const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 600);
         const uiParsed = _parseJson(uiRaw);
 
@@ -1486,8 +1513,6 @@ const HF_CLIENT = (() => {
             validation: validation,
             evidence_filter: evidenceFilter,
             ui_data: uiData,
-            speech_translated: speechTranslated || '',
-            report_lang: _lang,
             consistency: {
                 ...scores,
                 ui_summary: uiData.ui_summary,
