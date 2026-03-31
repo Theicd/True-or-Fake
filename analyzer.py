@@ -65,6 +65,45 @@ HF_TRANSIENT_ERRORS = (
     httpx.RemoteProtocolError,
 )
 
+# ═══════════════════════════════════════════════════════════
+#  COST TRACKER — per-request cost from HF billing data
+# ═══════════════════════════════════════════════════════════
+# Cost per API call (USD), derived from HuggingFace billing:
+#   total_accrued_cost / total_requests = cost_per_request
+_COST_PER_CALL = {
+    "whisper":      0.000320,   # $0.12 / 375 requests
+    "vision":       0.000104,   # $0.15 / 1440 requests  (Qwen VL-72B)
+    "detr":         0.000286,   # $0.30 / 1050 requests
+    "ai_class":     0.000052,   # <$0.01 / 192 requests
+    "chat":         0.000502,   # $0.33 / 658 requests   (DeepSeek-V3)
+    "chat_120b":    0.000359,   # $0.33 / 918 requests   (gpt-oss-120b)
+}
+
+class CostTracker:
+    """Counts API calls per model during a single analysis run."""
+    def __init__(self):
+        self.counts = {k: 0 for k in _COST_PER_CALL}
+
+    def tick(self, model_key: str):
+        if model_key in self.counts:
+            self.counts[model_key] += 1
+
+    def summary(self) -> dict:
+        total_calls = sum(self.counts.values())
+        total_cost = sum(self.counts[k] * _COST_PER_CALL[k] for k in self.counts)
+        return {
+            "calls": dict(self.counts),
+            "total_calls": total_calls,
+            "estimated_cost_usd": round(total_cost, 6),
+            "cost_breakdown": {
+                k: round(self.counts[k] * _COST_PER_CALL[k], 6)
+                for k in self.counts if self.counts[k] > 0
+            },
+        }
+
+# Thread-local-ish tracker — set per analysis invocation
+_current_tracker: CostTracker | None = None
+
 
 async def _retry(coro_fn, retries=2, backoff=5):
     """Retry an async callable up to `retries` times with exponential backoff."""
@@ -404,6 +443,7 @@ async def _api_whisper(audio_bytes, token):
         ms = int((time.time() - t0) * 1000)
         if r.status_code != 200:
             return {"error": r.text[:300]}, ms
+        if _current_tracker: _current_tracker.tick("whisper")
         try:
             return r.json(), ms
         except Exception:
@@ -438,6 +478,7 @@ async def _api_vision(b64, prompt, token, max_tok=800):
                     ch = r.json().get("choices", [])
                     content = ch[0]["message"]["content"] if ch else ""
                     log.info(f"Vision model selected: {model_name}")
+                    if _current_tracker: _current_tracker.tick("vision")
                     return content, int((time.time() - t0) * 1000)
                 except Exception as e:
                     errors.append(f"{model_name}: parse error {e}")
@@ -470,6 +511,7 @@ async def _api_detr(img_bytes, token):
         ms = int((time.time() - t0) * 1000)
         if r.status_code != 200:
             return [{"error": f"HTTP {r.status_code}"}], ms
+        if _current_tracker: _current_tracker.tick("detr")
         try:
             data = r.json()
             return ([{"label": o["label"], "score": round(o["score"], 3), "box": o.get("box", {})}
@@ -494,6 +536,7 @@ async def _api_ai_class(img_bytes, token):
         ms = int((time.time() - t0) * 1000)
         if r.status_code != 200:
             return {"error": f"HTTP {r.status_code}"}, ms
+        if _current_tracker: _current_tracker.tick("ai_class")
         try:
             data = r.json()
             result = {"raw": data}
@@ -534,6 +577,7 @@ async def _api_chat(prompt, token, system="You are a helpful assistant.", max_to
         ms = int((time.time() - t0) * 1000)
         if r.status_code != 200:
             return f"ERROR {r.status_code}: {r.text[:200]}", ms
+        if _current_tracker: _current_tracker.tick("chat")
         try:
             ch = r.json().get("choices", [])
             return (ch[0]["message"]["content"] if ch else ""), ms
@@ -584,6 +628,7 @@ async def _api_chat_120b(prompt, token, system="You are a helpful assistant.", m
             ms = int((time.time() - t0) * 1000)
             if r.status_code != 200:
                 return f"ERROR {r.status_code}: {r.text[:200]}", ms
+        if _current_tracker: _current_tracker.tick("chat_120b")
         try:
             ch = r.json().get("choices", [])
             return (ch[0]["message"]["content"] if ch else ""), ms
@@ -2861,6 +2906,8 @@ def _fmt_time(sec):
 #  MAIN: ANALYZE VIDEO
 # ═══════════════════════════════════════════════════════════
 async def analyze_video(video_bytes: bytes, token: str) -> dict:
+    global _current_tracker
+    _current_tracker = CostTracker()
     t_start = time.time()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -2971,6 +3018,7 @@ async def analyze_video(video_bytes: bytes, token: str) -> dict:
             "evidence_filter": sef.get("parsed", {}),
             "ui_data": su.get("parsed", {}),
             "total_duration_ms": total_ms,
+            "estimated_cost": _current_tracker.summary(),
         }
 
 
@@ -3000,6 +3048,8 @@ def _build_frames_output(decomp, ocr_s, obj_s, cap_s, ai_s):
 #  MAIN: ANALYZE IMAGE
 # ═══════════════════════════════════════════════════════════
 async def analyze_image(img_bytes: bytes, token: str) -> dict:
+    global _current_tracker
+    _current_tracker = CostTracker()
     t_start = time.time()
     b64 = base64.b64encode(img_bytes).decode()
     meta = {
@@ -3102,4 +3152,5 @@ async def analyze_image(img_bytes: bytes, token: str) -> dict:
         "evidence_filter": sef.get("parsed", {}),
         "ui_data": su.get("parsed", {}),
         "total_duration_ms": total_ms,
+        "estimated_cost": _current_tracker.summary(),
     }

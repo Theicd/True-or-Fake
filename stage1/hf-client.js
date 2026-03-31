@@ -22,6 +22,39 @@ const HF_CLIENT = (() => {
         'Qwen/Qwen2.5-VL-7B-Instruct',
     ];
 
+    // ── Cost tracking (avg cost per API call, based on HF inference billing data) ──
+    const COST_PER_CALL = {
+        'Qwen/Qwen2.5-VL-72B-Instruct': 0.000104,  // $0.15 / 1440 reqs
+        'deepseek-ai/DeepSeek-V3':       0.000501,  // $0.33 / 658 reqs
+        'facebook/detr-resnet-50':       0.000286,  // $0.30 / 1050 reqs
+        'openai/whisper-large-v3-turbo': 0.000320,  // $0.12 / 375 reqs
+        'umm-maybe/AI-image-detector':   0.000050,  // <$0.01 / 192 reqs
+    };
+
+    function _createCostTracker() {
+        const calls = {};
+        return {
+            add(model) {
+                calls[model] = (calls[model] || 0) + 1;
+            },
+            summary() {
+                let total = 0;
+                const breakdown = {};
+                for (const [model, count] of Object.entries(calls)) {
+                    const rate = COST_PER_CALL[model] || 0;
+                    const cost = count * rate;
+                    total += cost;
+                    breakdown[model] = { calls: count, cost_usd: Math.round(cost * 1000000) / 1000000 };
+                }
+                return {
+                    total_cost_usd: Math.round(total * 10000) / 10000,
+                    total_calls: Object.values(calls).reduce((s, c) => s + c, 0),
+                    breakdown,
+                };
+            },
+        };
+    }
+
     // ── Prompts (same as backend analyzer.py) ──
 
     const P_OCR =
@@ -525,6 +558,7 @@ const HF_CLIENT = (() => {
 
     async function analyzeImage(file, url, token, onProgress, lang) {
         const t0 = Date.now();
+        const costTracker = _createCostTracker();
         const prog = onProgress || (() => {});
         lang = lang || 'he';
         let b64 = null, imgBytes = null;
@@ -725,6 +759,22 @@ const HF_CLIENT = (() => {
 
         const totalMs = Date.now() - t0;
 
+        // ── Cost estimate ──
+        // 3 vision calls (OCR, Caption, AI Vision) + 1 DETR + 1 AI Classifier
+        // + 5 chat calls (narrative, intelligence, validation, evidence_filter, UI adapter)
+        // + possible translation call
+        costTracker.add(VISION_MODELS[0]); // OCR
+        costTracker.add(VISION_MODELS[0]); // Caption
+        costTracker.add(VISION_MODELS[0]); // AI Vision
+        if (imgBytes) costTracker.add(DETR);
+        if (imgBytes) costTracker.add(AI_CLASS);
+        costTracker.add(TEXT_LLM); // narrative
+        costTracker.add(TEXT_LLM); // intelligence
+        costTracker.add(TEXT_LLM); // validation
+        costTracker.add(TEXT_LLM); // evidence_filter
+        costTracker.add(TEXT_LLM); // UI adapter
+        if (imgOcrTranslated) costTracker.add(TEXT_LLM); // OCR translation
+
         return {
             status: 'ok',
             meta: meta,
@@ -745,6 +795,7 @@ const HF_CLIENT = (() => {
                 consistency_applied: true,
             },
             total_duration_ms: totalMs,
+            estimated_cost: costTracker.summary(),
         };
     }
 
@@ -1149,6 +1200,7 @@ const HF_CLIENT = (() => {
 
     async function analyzeVideo(file, token, onProgress, lang) {
         const t0 = Date.now();
+        const costTracker = _createCostTracker();
         const prog = onProgress || (() => {});
         lang = lang || 'he';
         const videoBytes = await _fileToArrayBuffer(file);
@@ -1528,6 +1580,28 @@ const HF_CLIENT = (() => {
         prog(95, 'סיום...');
         const totalMs = Date.now() - t0;
 
+        // ── Cost tracking ──
+        const nFrames = selectedFrames.length;
+        for (let i = 0; i < nFrames; i++) {
+            costTracker.add(VISION_MODELS[0]); // OCR per frame
+            costTracker.add(VISION_MODELS[0]); // Caption per frame
+            costTracker.add(DETR);             // DETR per frame
+            costTracker.add(VISION_MODELS[0]); // AI Vision per frame
+        }
+        costTracker.add(AI_CLASS); // first frame
+        costTracker.add(AI_CLASS); // mid frame
+        if (speechText) costTracker.add(WHISPER); // whisper call(s)
+        costTracker.add(TEXT_LLM); // questions
+        for (let i = 0; i < (answers ? answers.length : 0); i++) {
+            costTracker.add(VISION_MODELS[0]); // reinvestigate per question
+        }
+        costTracker.add(TEXT_LLM); // summary
+        costTracker.add(TEXT_LLM); // narrative
+        costTracker.add(TEXT_LLM); // intelligence
+        costTracker.add(TEXT_LLM); // validation
+        costTracker.add(TEXT_LLM); // evidence filter
+        costTracker.add(TEXT_LLM); // UI adapter
+
         return {
             status: 'ok',
             meta: meta,
@@ -1548,6 +1622,7 @@ const HF_CLIENT = (() => {
                 consistency_applied: true,
             },
             total_duration_ms: totalMs,
+            estimated_cost: costTracker.summary(),
         };
     }
 
