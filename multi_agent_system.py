@@ -48,6 +48,8 @@ from analyzer import (
     _search_all_sources,
     # Constants
     LLM_120B, TEXT_LLM,
+    # Cost tracking
+    CostTracker,
 )
 
 log = logging.getLogger("multi_agent")
@@ -572,7 +574,8 @@ class Controller:
     # ── MAIN ENTRY POINT: ניתוח וידאו ──
     async def analyze_video(self, video_bytes: bytes, token: str) -> dict:
         """ניתוח וידאו דרך Multi-Agent pipeline."""
-        import hashlib, tempfile
+        import hashlib, tempfile, analyzer
+        analyzer._current_tracker = CostTracker()
         t_start = time.time()
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -597,13 +600,15 @@ class Controller:
             result["meta"] = meta
             result["total_duration_ms"] = int((time.time() - t_start) * 1000)
             result["agent_timeline"] = self.agent_timeline
+            result["estimated_cost"] = analyzer._current_tracker.summary()
             self.log.info(f"🧠 Controller: video analysis complete in {result['total_duration_ms']}ms")
             return result
 
     # ── MAIN ENTRY POINT: ניתוח תמונה ──
     async def analyze_image(self, img_bytes: bytes, token: str) -> dict:
         """ניתוח תמונה דרך Multi-Agent pipeline."""
-        import hashlib
+        import hashlib, analyzer
+        analyzer._current_tracker = CostTracker()
         t_start = time.time()
 
         meta = {
@@ -627,12 +632,15 @@ class Controller:
         result["meta"] = meta
         result["total_duration_ms"] = int((time.time() - t_start) * 1000)
         result["agent_timeline"] = self.agent_timeline
+        result["estimated_cost"] = analyzer._current_tracker.summary()
         self.log.info(f"🧠 Controller: image analysis complete in {result['total_duration_ms']}ms")
         return result
 
     # ── MAIN ENTRY POINT: ניתוח טקסט בלבד ──
     async def analyze_text(self, text: str, token: str) -> dict:
         """ניתוח טקסט גולמי — ללא media."""
+        import analyzer
+        analyzer._current_tracker = CostTracker()
         t_start = time.time()
         output = {
             "speech_text": text, "ocr_text": "", "merged_text": text,
@@ -647,6 +655,7 @@ class Controller:
         result["meta"] = meta
         result["total_duration_ms"] = int((time.time() - t_start) * 1000)
         result["agent_timeline"] = self.agent_timeline
+        result["estimated_cost"] = analyzer._current_tracker.summary()
         return result
 
     # ═══════════════════════════════════════════════════════
