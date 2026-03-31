@@ -128,17 +128,28 @@ async function loadSharedHistory(force = false) {
     _sharedLoading = true;
     try {
         let serverHistory = [];
-        const r = await apiFetch('/api/reports?limit=50');
-        if (r.ok) {
-            const data = await r.json();
-            serverHistory = data.reports || [];
+        let serverOk = false;
+        if (_hasBackend()) {
+            try {
+                const r = await apiFetch('/api/reports?limit=50');
+                if (r.ok) {
+                    const data = await r.json();
+                    serverHistory = data.reports || [];
+                    serverOk = true;
+                }
+            } catch (_) { /* server unreachable */ }
         }
-        // Server is THE source of truth
-        _sharedHistory = serverHistory.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-        // Sync localStorage to match server (backup only)
-        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(_sharedHistory)); } catch (e) { /* quota */ }
+        if (serverOk && serverHistory.length > 0) {
+            // Server is THE source of truth — sync localStorage
+            _sharedHistory = serverHistory.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(_sharedHistory)); } catch (e) { /* quota */ }
+        } else {
+            // No backend or empty server → use localStorage + Relay
+            const localHistory = getLocalHistory();
+            const relayHistory = await loadRelayHistory(25);
+            _sharedHistory = mergeHistoryLists(localHistory, relayHistory);
+        }
     } catch (e) {
-        // Offline fallback — use localStorage
         _sharedHistory = getLocalHistory();
     } finally {
         _sharedLoading = false;
