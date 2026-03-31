@@ -31,14 +31,18 @@ const HF_CLIENT = (() => {
         'If unclear character write [?]. If NO text at all write: NO_TEXT_FOUND\n' +
         'CRITICAL: Do NOT write any introduction like \'The text is:\'. Output ONLY the text.';
 
-    const P_CAPTION =
-        'Describe this image in detail. Include:\n' +
-        '- What is shown (people, objects, scene)\n' +
-        '- Text visible on screen (in original language)\n' +
-        '- Setting/environment\n' +
-        '- Notable visual elements\n' +
-        'Be factual and specific. Write your description in HEBREW (עברית).\n' +
-        'If the visible text is in another language, include the original text AND its Hebrew translation.';
+    function P_CAPTION(lang) {
+        const isHe = lang === 'he';
+        return 'Describe this image in detail. Include:\n' +
+            '- What is shown (people, objects, scene)\n' +
+            '- Text visible on screen (in original language)\n' +
+            '- Setting/environment\n' +
+            '- Notable visual elements\n' +
+            'Be factual and specific. ' +
+            (isHe
+                ? 'Write your description in HEBREW (עברית).\nIf the visible text is in another language, include the original text AND its Hebrew translation.'
+                : 'Write your description in English.\nIf the visible text is in another language, include the original text AND its English translation.');
+    }
 
     const P_AI_VISION =
         'Analyze this image for signs of AI generation or manipulation.\n' +
@@ -46,39 +50,42 @@ const HF_CLIENT = (() => {
         'blurred edges, repetitive patterns, deepfake artifacts.\n' +
         'Return JSON: {"ai_generated": true/false, "confidence": 0.0-1.0, "signals": []}';
 
-    const P_INTELLIGENCE =
-        'You are a high-level intelligence analyst.\n\n' +
-        'Your job:\n' +
-        '- Interpret the content meaning\n' +
-        '- Detect: satire, parody, misinformation, propaganda, factual reporting\n' +
-        '- Identify key signals (contradictions, humor, nonsense, unsourced claims)\n' +
-        '- List factual findings grounded ONLY in the input data\n' +
-        '- Note uncertainties\n\n' +
-        'STRICT RULES:\n' +
-        '- Do NOT assign scores or percentages\n' +
-        '- Do NOT estimate reliability, risk, confidence, authenticity, or manipulation\n' +
-        '- Do NOT invent facts not supported by input\n' +
-        '- If uncertain → say so explicitly\n' +
-        '- Base conclusions ONLY on provided data\n' +
-        '- Prefer \'insufficient evidence\' over guessing\n\n' +
-        'LANGUAGE RULES:\n' +
-        '- Write final_assessment in HEBREW (עברית) — 2-3 sentences\n' +
-        '- Write key_findings in HEBREW (עברית) — short factual sentences\n' +
-        '- Write uncertainties in HEBREW (עברית) — short sentences\n' +
-        '- Write recommended_action in HEBREW (עברית)\n' +
-        '- Write reasoning in English\n' +
-        '- Write key_signals in English\n' +
-        '- Write content_type in English\n\n' +
-        'OUTPUT FORMAT (STRICT JSON ONLY):\n' +
-        '{\n' +
-        '  "content_type": "satire | misinformation | propaganda | factual | fiction | unclear",\n' +
-        '  "key_signals": ["contradictions", "humor", "nonsense", "unsourced_claims"],\n' +
-        '  "key_findings": ["ממצא עובדתי בעברית 1", "..."],\n' +
-        '  "final_assessment": "מסקנה קצרה בעברית — 2-3 משפטים",\n' +
-        '  "reasoning": "step-by-step reasoning in English based ONLY on input",\n' +
-        '  "uncertainties": ["אי ודאות בעברית 1", "..."],\n' +
-        '  "recommended_action": "המלצה בעברית"\n' +
-        '}';
+    function P_INTELLIGENCE(lang) {
+        const isHe = lang === 'he';
+        const tl = isHe ? 'HEBREW (עברית)' : 'English';
+        return 'You are a high-level intelligence analyst.\n\n' +
+            'Your job:\n' +
+            '- Interpret the content meaning\n' +
+            '- Detect: satire, parody, misinformation, propaganda, factual reporting\n' +
+            '- Identify key signals (contradictions, humor, nonsense, unsourced claims)\n' +
+            '- List factual findings grounded ONLY in the input data\n' +
+            '- Note uncertainties\n\n' +
+            'STRICT RULES:\n' +
+            '- Do NOT assign scores or percentages\n' +
+            '- Do NOT estimate reliability, risk, confidence, authenticity, or manipulation\n' +
+            '- Do NOT invent facts not supported by input\n' +
+            '- If uncertain → say so explicitly\n' +
+            '- Base conclusions ONLY on provided data\n' +
+            '- Prefer \'insufficient evidence\' over guessing\n\n' +
+            'LANGUAGE RULES:\n' +
+            '- Write final_assessment in ' + tl + ' — 2-3 sentences\n' +
+            '- Write key_findings in ' + tl + ' — short factual sentences\n' +
+            '- Write uncertainties in ' + tl + ' — short sentences\n' +
+            '- Write recommended_action in ' + tl + '\n' +
+            '- Write reasoning in English\n' +
+            '- Write key_signals in English\n' +
+            '- Write content_type in English\n\n' +
+            'OUTPUT FORMAT (STRICT JSON ONLY):\n' +
+            '{\n' +
+            '  "content_type": "satire | misinformation | propaganda | factual | fiction | unclear",\n' +
+            '  "key_signals": ["contradictions", "humor", "nonsense", "unsourced_claims"],\n' +
+            '  "key_findings": ["finding 1", "..."],\n' +
+            '  "final_assessment": "short conclusion — 2-3 sentences",\n' +
+            '  "reasoning": "step-by-step reasoning in English based ONLY on input",\n' +
+            '  "uncertainties": ["uncertainty 1", "..."],\n' +
+            '  "recommended_action": "recommendation"\n' +
+            '}';
+    }
 
     const P_NARRATIVE_CLASS =
         'You are a Narrative Intelligence Classifier.\n' +
@@ -114,84 +121,99 @@ const HF_CLIENT = (() => {
         '  "risk_override": false\n' +
         '}';
 
-    const P_UI_ADAPTER =
-        'You are a UI text generator.\n' +
-        'Your ONLY job: write a short Hebrew summary of the analysis.\n\n' +
-        'STRICT RULES:\n' +
-        '- Do NOT produce scores, percentages, or metrics\n' +
-        '- Do NOT produce tags, flags, or labels\n' +
-        '- Do NOT estimate reliability, risk, confidence\n' +
-        '- ONLY produce a ui_summary text in HEBREW\n' +
-        '- 2-3 sentences maximum\n' +
-        '- If content is satire → explain it neutrally, do not alarm\n' +
-        '- Base summary ONLY on the input analysis\n\n' +
-        'OUTPUT (STRICT JSON ONLY):\n' +
-        '{\n' +
-        '  "ui_summary": "סיכום בעברית — 2-3 משפטים"\n' +
-        '}';
+    function P_UI_ADAPTER(lang) {
+        const isHe = lang === 'he';
+        const tl = isHe ? 'HEBREW (עברית)' : 'English';
+        return 'You are a UI text generator.\n' +
+            'Your ONLY job: write a short ' + tl + ' summary of the analysis.\n\n' +
+            'STRICT RULES:\n' +
+            '- Do NOT produce scores, percentages, or metrics\n' +
+            '- Do NOT produce tags, flags, or labels\n' +
+            '- Do NOT estimate reliability, risk, confidence\n' +
+            '- ONLY produce a ui_summary text in ' + tl + '\n' +
+            '- 2-3 sentences maximum\n' +
+            '- If content is satire → explain it neutrally, do not alarm\n' +
+            '- Base summary ONLY on the input analysis\n\n' +
+            'OUTPUT (STRICT JSON ONLY):\n' +
+            '{\n' +
+            '  "ui_summary": "summary in ' + tl + ' — 2-3 sentences"\n' +
+            '}';
+    }
 
-    const P_QUESTIONS =
-        'You are analyzing a video. Below is all extracted data.\n' +
-        'Generate 5-10 investigative questions that will help understand the content better.\n' +
-        'Focus on:\n' +
-        '- Unclear or ambiguous elements\n' +
-        '- Possible contradictions\n' +
-        '- Missing context\n' +
-        '- Visual anomalies\n' +
-        '- Claims that need verification\n' +
-        'Write questions in HEBREW (עברית) regardless of input language.\n' +
-        'Return JSON array: ["שאלה 1", "שאלה 2", ...]';
+    function P_QUESTIONS(lang) {
+        const isHe = lang === 'he';
+        const tl = isHe ? 'HEBREW (עברית)' : 'English';
+        return 'You are analyzing a video. Below is all extracted data.\n' +
+            'Generate 5-10 investigative questions that will help understand the content better.\n' +
+            'Focus on:\n' +
+            '- Unclear or ambiguous elements\n' +
+            '- Possible contradictions\n' +
+            '- Missing context\n' +
+            '- Visual anomalies\n' +
+            '- Claims that need verification\n' +
+            'Write questions in ' + tl + ' regardless of input language.\n' +
+            'Return JSON array: ["question 1", "question 2", ...]';
+    }
 
-    const P_SUMMARY =
-        'Summarize the content of this video based on all collected data below.\n' +
-        'Focus ONLY on:\n' +
-        '- What is happening\n' +
-        '- Key elements and objects\n' +
-        '- People and their actions\n' +
-        '- Text/speech content\n' +
-        'NO assumptions. NO judgments. Keep it factual and structured.\n' +
-        'IMPORTANT: Always write the summary in HEBREW (עברית), regardless of the input language.\n' +
-        'If the input text is in another language, translate your summary to Hebrew.';
+    function P_SUMMARY(lang) {
+        const isHe = lang === 'he';
+        const tl = isHe ? 'HEBREW (עברית)' : 'English';
+        return 'Summarize the content of this video based on all collected data below.\n' +
+            'Focus ONLY on:\n' +
+            '- What is happening\n' +
+            '- Key elements and objects\n' +
+            '- People and their actions\n' +
+            '- Text/speech content\n' +
+            'NO assumptions. NO judgments. Keep it factual and structured.\n' +
+            'IMPORTANT: Always write the summary in ' + tl + ', regardless of the input language.\n' +
+            'If the input text is in another language, translate your summary to ' + tl + '.';
+    }
 
 
 
-    const P_VALIDATION =
-        'You are a validation system.\n' +
-        'Your job is to verify that the analysis is strictly grounded in the input.\n\n' +
-        'RULES:\n' +
-        '- Mark any claim that is not supported by input data\n' +
-        '- Reduce confidence if unsupported claims are found\n' +
-        '- Ensure no hallucinated facts exist\n\n' +
-        'LANGUAGE: Write issues in HEBREW (עברית). Keep is_valid and corrected_confidence in English.\n\n' +
-        'OUTPUT (STRICT JSON ONLY):\n' +
-        '{\n' +
-        '  "is_valid": true,\n' +
-        '  "issues": ["בעיה בעברית 1"],\n' +
-        '  "corrected_confidence": "Low | Medium | High"\n' +
-        '}';
+    function P_VALIDATION(lang) {
+        const isHe = lang === 'he';
+        const tl = isHe ? 'HEBREW (עברית)' : 'English';
+        return 'You are a validation system.\n' +
+            'Your job is to verify that the analysis is strictly grounded in the input.\n\n' +
+            'RULES:\n' +
+            '- Mark any claim that is not supported by input data\n' +
+            '- Reduce confidence if unsupported claims are found\n' +
+            '- Ensure no hallucinated facts exist\n\n' +
+            'LANGUAGE: Write issues in ' + tl + '. Keep is_valid and corrected_confidence in English.\n\n' +
+            'OUTPUT (STRICT JSON ONLY):\n' +
+            '{\n' +
+            '  "is_valid": true,\n' +
+            '  "issues": ["issue 1"],\n' +
+            '  "corrected_confidence": "Low | Medium | High"\n' +
+            '}';
+    }
 
-    const P_EVIDENCE_FILTER =
-        'You are an evidence-based filtering system.\n' +
-        'Your job is to STRICTLY remove or correct any claim that is not directly supported by the input data.\n\n' +
-        'RULES:\n' +
-        '- If a claim is not explicitly supported by the original data → REMOVE IT\n' +
-        '- Do not rephrase unsupported claims — delete them\n' +
-        '- Keep only verifiable statements that are grounded in input\n' +
-        '- List every removed claim so the user can see what was filtered\n' +
-        '- Provide a filtered assessment containing ONLY supported conclusions\n' +
-        '- Provide filtered_findings containing ONLY evidence-backed findings\n\n' +
-        'LANGUAGE RULES:\n' +
-        '- Write filtered_assessment in HEBREW (עברית)\n' +
-        '- Write filtered_findings in HEBREW (עברית) — short sentences\n' +
-        '- Write removed_claims in HEBREW (עברית)\n' +
-        '- Keep evidence_quality value in English\n\n' +
-        'OUTPUT (STRICT JSON ONLY):\n' +
-        '{\n' +
-        '  "filtered_assessment": "מסקנה קצרה בעברית מבוססת ראיות בלבד",\n' +
-        '  "filtered_findings": ["ממצא מאומת בעברית 1", "..."],\n' +
-        '  "removed_claims": ["טענה שהוסרה בעברית 1", "..."],\n' +
-        '  "evidence_quality": "Strong | Moderate | Weak | Insufficient"\n' +
-        '}';
+    function P_EVIDENCE_FILTER(lang) {
+        const isHe = lang === 'he';
+        const tl = isHe ? 'HEBREW (עברית)' : 'English';
+        return 'You are an evidence-based filtering system.\n' +
+            'Your job is to STRICTLY remove or correct any claim that is not directly supported by the input data.\n\n' +
+            'RULES:\n' +
+            '- If a claim is not explicitly supported by the original data → REMOVE IT\n' +
+            '- Do not rephrase unsupported claims — delete them\n' +
+            '- Keep only verifiable statements that are grounded in input\n' +
+            '- List every removed claim so the user can see what was filtered\n' +
+            '- Provide a filtered assessment containing ONLY supported conclusions\n' +
+            '- Provide filtered_findings containing ONLY evidence-backed findings\n\n' +
+            'LANGUAGE RULES:\n' +
+            '- Write filtered_assessment in ' + tl + '\n' +
+            '- Write filtered_findings in ' + tl + ' — short sentences\n' +
+            '- Write removed_claims in ' + tl + '\n' +
+            '- Keep evidence_quality value in English\n\n' +
+            'OUTPUT (STRICT JSON ONLY):\n' +
+            '{\n' +
+            '  "filtered_assessment": "short evidence-based conclusion",\n' +
+            '  "filtered_findings": ["verified finding 1", "..."],\n' +
+            '  "removed_claims": ["removed claim 1", "..."],\n' +
+            '  "evidence_quality": "Strong | Moderate | Weak | Insufficient"\n' +
+            '}';
+    }
 
     // ── Helpers ──
 
@@ -501,9 +523,10 @@ const HF_CLIENT = (() => {
     //  MAIN: analyzeImage — full pipeline in the browser
     // ═══════════════════════════════════════════════════
 
-    async function analyzeImage(file, url, token, onProgress) {
+    async function analyzeImage(file, url, token, onProgress, lang) {
         const t0 = Date.now();
         const prog = onProgress || (() => {});
+        lang = lang || 'he';
         let b64 = null, imgBytes = null;
         const isUrlMode = !file && !!url;
 
@@ -530,7 +553,7 @@ const HF_CLIENT = (() => {
         // ── Run parallel ──
         const parallelTasks = [
             visionCall(P_OCR).then(r => { prog(20, 'שלב 2: תיאור תמונה...'); return r; }),
-            visionCall(P_CAPTION).then(r => { prog(30, 'שלב 3: זיהוי אובייקטים...'); return r; }),
+            visionCall(P_CAPTION(lang)).then(r => { prog(30, 'שלב 3: זיהוי אובייקטים...'); return r; }),
             // DETR & AI Classifier need raw bytes — only for file uploads
             imgBytes ? _apiDetr(imgBytes, token).then(r => { prog(35, 'שלב 4: בדיקת AI...'); return r; }) : Promise.resolve([]),
             visionCall(P_AI_VISION),
@@ -548,7 +571,7 @@ const HF_CLIENT = (() => {
         let imgOcrTranslated = false;
         if (ocrText && ocrText.length >= 10 && !_isHebrew(ocrText)) {
             prog(42, 'מתרגם טקסט OCR לעברית...');
-            const ocrTr = await _translateToHebrew(ocrText, token);
+            const ocrTr = await _translateToHebrew(ocrText, token, lang);
             imgOcrTranslated = ocrTr.was_translated;
             if (ocrTr.was_translated) {
                 imgOcrOriginal = ocrText;
@@ -603,7 +626,7 @@ const HF_CLIENT = (() => {
             '== OBJECTS DETECTED ==\n' + objR.map(d => d.label + ' (' + d.score + ')').join(', ') + '\n\n' +
             '== AI DETECTION ==\nVision: ' + aivR + '\nClassifier: ' + JSON.stringify(aicR) + '\n\n' +
             '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + ' (confidence: ' + (narrativeResult.confidence || 0) + ')\n\n' +
-            P_INTELLIGENCE;
+            P_INTELLIGENCE(lang);
 
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
@@ -629,7 +652,7 @@ const HF_CLIENT = (() => {
             'Caption: ' + capR.slice(0, 300) + '\n\n' +
             'ANALYSIS OUTPUT:\n' +
             JSON.stringify({ intelligence, narrative: narrativeResult, scores }).slice(0, 1500) + '\n\n' +
-            P_VALIDATION;
+            P_VALIDATION(lang);
         const validRaw = await _apiChat(validPrompt, token, 'You are a validation system.', 512);
         const validation = _parseJson(validRaw);
         if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
@@ -659,7 +682,7 @@ const HF_CLIENT = (() => {
             'ANALYSIS:\n' +
             JSON.stringify({ intelligence, narrative: narrativeResult }).slice(0, 1000) + '\n\n' +
             'VALIDATION ISSUES:\n' + JSON.stringify(validation.issues) + '\n\n' +
-            P_EVIDENCE_FILTER;
+            P_EVIDENCE_FILTER(lang);
         const evFilterRaw = await _apiChat(evFilterPrompt, token, 'You are an evidence filter system.', 800);
         const evidenceFilter = _parseJson(evFilterRaw);
 
@@ -672,7 +695,7 @@ const HF_CLIENT = (() => {
             '== INTELLIGENCE ==\n' + JSON.stringify(intelligence).slice(0, 500) + '\n' +
             '== NARRATIVE ==\n' + JSON.stringify(narrativeResult).slice(0, 300) + '\n' +
             '== EVIDENCE FILTER ==\n' + JSON.stringify(evidenceFilter).slice(0, 300) + '\n\n' +
-            P_UI_ADAPTER;
+            P_UI_ADAPTER(lang);
 
         const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 600);
         const uiParsed = _parseJson(uiRaw);
@@ -737,9 +760,11 @@ const HF_CLIENT = (() => {
         return hebrewChars / totalLetters > 0.3;
     }
 
-    async function _translateToHebrew(text, token) {
+    async function _translateToHebrew(text, token, lang) {
         if (!text || text.length < 10) return { translated: text, detected_language: 'unknown', was_translated: false };
         if (_isHebrew(text)) return { translated: text, detected_language: 'he', was_translated: false };
+        // When UI is in English, skip translation — LLMs handle multilingual input fine
+        if (lang && lang !== 'he') return { translated: text, detected_language: 'auto', was_translated: false };
         try {
             const prompt =
                 'Translate the following text to Hebrew (עברית).\n' +
@@ -1122,9 +1147,10 @@ const HF_CLIENT = (() => {
     //  MAIN: analyzeVideo — full video pipeline in browser
     // ═══════════════════════════════════════════════════
 
-    async function analyzeVideo(file, token, onProgress) {
+    async function analyzeVideo(file, token, onProgress, lang) {
         const t0 = Date.now();
         const prog = onProgress || (() => {});
+        lang = lang || 'he';
         const videoBytes = await _fileToArrayBuffer(file);
         const hash = await _sha256(videoBytes);
 
@@ -1184,7 +1210,7 @@ const HF_CLIENT = (() => {
         let speechWasTranslated = false;
         if (speechText && speechText.length >= 10) {
             prog(26, 'בודק שפת דיבור ומתרגם במידת הצורך...');
-            const tr = await _translateToHebrew(speechText, token);
+            const tr = await _translateToHebrew(speechText, token, lang);
             speechLang = tr.detected_language;
             speechWasTranslated = tr.was_translated;
             if (tr.was_translated) {
@@ -1207,7 +1233,7 @@ const HF_CLIENT = (() => {
                 const b64 = _uint8ToBase64(frame.data);
                 const [ocr, caption, objects, aiVis] = await Promise.all([
                     _apiVision(b64, P_OCR, token),
-                    _apiVision(b64, P_CAPTION, token),
+                    _apiVision(b64, P_CAPTION(lang), token),
                     _apiDetr(frame.data, token),
                     _apiVision(b64, P_AI_VISION, token),
                 ]);
@@ -1258,7 +1284,7 @@ const HF_CLIENT = (() => {
         let ocrWasTranslated = false;
         if (allOcr && allOcr.length >= 10 && !_isHebrew(allOcr)) {
             prog(56, 'מתרגם טקסט OCR לעברית...');
-            const ocrTr = await _translateToHebrew(allOcr, token);
+            const ocrTr = await _translateToHebrew(allOcr, token, lang);
             ocrWasTranslated = ocrTr.was_translated;
             if (ocrTr.was_translated) {
                 allOcr = ocrTr.translated;
@@ -1287,7 +1313,7 @@ const HF_CLIENT = (() => {
             mergedText.slice(0, 3000) + '\n\n' +
             'DETECTED OBJECTS: ' + allObjects.map(o => o.label).join(', ') + '\n\n' +
             'Generate 5-10 investigative questions.';
-        const questionsRaw = await _apiChat(questionsPrompt, token, P_QUESTIONS, 800);
+        const questionsRaw = await _apiChat(questionsPrompt, token, P_QUESTIONS(lang), 800);
         let questions = [];
         try {
             const parsed = _parseJson(questionsRaw);
@@ -1333,7 +1359,7 @@ const HF_CLIENT = (() => {
             'OBJECTS: ' + allObjects.map(o => o.label).join(', ') + '\n\n' +
             'INVESTIGATION Q&A:\n' + qaSection.slice(0, 1500) + '\n\n' +
             'Write a factual summary.';
-        const summaryRaw = await _apiChat(summaryPrompt, token, P_SUMMARY, 1200);
+        const summaryRaw = await _apiChat(summaryPrompt, token, P_SUMMARY(lang), 1200);
         const summaryText = summaryRaw.trim();
 
         // Build output structure matching backend
@@ -1402,7 +1428,7 @@ const HF_CLIENT = (() => {
             '== AI DETECTION ==\nClassifier: ' + JSON.stringify(aiClassResult) + '\n\n' +
             '== NARRATIVE CLASS ==\n' + (narrativeResult.narrative_class || 'Unclear') + ' (confidence: ' + (narrativeResult.confidence || 0) + ')\n\n' +
             '== INVESTIGATION Q&A ==\n' + qaSection.slice(0, 800) + '\n\n' +
-            P_INTELLIGENCE;
+            P_INTELLIGENCE(lang);
         const intelRaw = await _apiChat(intelPrompt, token, 'You are a senior intelligence analyst.', 1500);
         const intelligence = _parseJson(intelRaw);
 
@@ -1429,7 +1455,7 @@ const HF_CLIENT = (() => {
             'Summary: ' + summaryText.slice(0, 300) + '\n\n' +
             'ANALYSIS OUTPUT:\n' +
             JSON.stringify({ intelligence, narrative: narrativeResult, scores }).slice(0, 1500) + '\n\n' +
-            P_VALIDATION;
+            P_VALIDATION(lang);
         const validRaw = await _apiChat(validPrompt, token, 'You are a validation system.', 512);
         const validation = _parseJson(validRaw);
         if (!validation.is_valid && validation.is_valid !== false) validation.is_valid = true;
@@ -1460,7 +1486,7 @@ const HF_CLIENT = (() => {
             'ANALYSIS:\n' +
             JSON.stringify({ intelligence: intelligence, narrative: narrativeResult }).slice(0, 1000) + '\n\n' +
             'VALIDATION ISSUES:\n' + JSON.stringify(validation.issues) + '\n\n' +
-            P_EVIDENCE_FILTER;
+            P_EVIDENCE_FILTER(lang);
         const evFilterRaw = await _apiChat(evFilterPrompt, token, 'You are an evidence filter system.', 800);
         const evidenceFilter = _parseJson(evFilterRaw);
 
@@ -1473,7 +1499,7 @@ const HF_CLIENT = (() => {
             '== INTELLIGENCE ==\n' + JSON.stringify(intelligence).slice(0, 500) + '\n' +
             '== NARRATIVE ==\n' + JSON.stringify(narrativeResult).slice(0, 300) + '\n' +
             '== EVIDENCE FILTER ==\n' + JSON.stringify(evidenceFilter).slice(0, 300) + '\n\n' +
-            P_UI_ADAPTER;
+            P_UI_ADAPTER(lang);
         const uiRaw = await _apiChat(uiPrompt, token, 'You are a UI output generator.', 600);
         const uiParsed = _parseJson(uiRaw);
 
