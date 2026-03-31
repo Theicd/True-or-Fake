@@ -161,9 +161,9 @@ tr.detail-row td{padding:0;border-top:none}
       <span>זכור שם משתמש וסיסמה במחשב זה</span>
     </label>
     <div class="field" id="apiBaseField" style="display:none">
-      <label>כתובת שרת API</label>
-      <input type="text" id="cpApiBase" placeholder="https://your-server.example.com" dir="ltr" style="font-size:.82rem">
-      <small style="color:#64748b;font-size:.7rem">נדרש כשגולשים מ-GitHub Pages</small>
+      <label>כתובת שרת API <small>(אופציונלי)</small></label>
+      <input type="text" id="cpApiBase" placeholder="השאר ריק למצב Relay" dir="ltr" style="font-size:.82rem">
+      <small style="color:#64748b;font-size:.7rem">השאר ריק לחיבור לשרת חיצוני. בלי שרת — המערכת תטען דוחות מרשת Relay בלבד</small>
     </div>
     <button class="btn-login" id="btnLogin">כניסה</button>
     <div class="err-msg" id="loginErr"></div>
@@ -249,13 +249,17 @@ tr.detail-row td{padding:0;border-top:none}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.7.2/lib/nostr.bundle.min.js"></script>
 <script src="./network-config.js"></script>
+<script src="./decentralized.js"></script>
 <script>
 const API_BASE_KEY = 'tof_api_base';
 const API_BASE_HINT = 'api_base';
 let _session = sessionStorage.getItem('cp_session') || '';
 let _reports = [];
+let _relayMode = false;  // true when running on GitHub Pages without server
 const CREDS_KEY = 'cpanel_saved_credentials_v1';
+const CPANEL_PASS_HASH_KEY = 'cpanel_admin_hash_v1';
 const DEFAULT_NETWORK_CONFIG = {
   relayUrls: ['wss://relay.snort.social','wss://nos.lol','wss://relay.damus.io'],
   blossomServers: [{url:'https://blossom.band'}],
@@ -294,6 +298,11 @@ function apiFetch(path, options){
 
 function apiHelp(){
   return 'נדרש שרת API פעיל. פתח עם ?api_base=https://your-server.example.com או הגדר localStorage["tof_api_base"].';
+}
+
+async function sha256Text(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
 function getNetworkConfig(){
@@ -436,34 +445,56 @@ async function doLogin(){
   const err = document.getElementById('loginErr');
   err.textContent = '';
   if(!u||!p){ err.textContent='נא למלא את כל השדות'; return; }
-  // Save API base from input if on GitHub Pages
+  document.getElementById('btnLogin').disabled = true;
+
+  // Save API base from input if provided
   if(isGithubPagesHost()){
     const abVal = normalizeApiBase((document.getElementById('cpApiBase')||{}).value||'');
     if(abVal) localStorage.setItem(API_BASE_KEY, abVal);
   }
-  document.getElementById('btnLogin').disabled = true;
-  if(isGithubPagesHost() && !getApiBase()){
-    err.textContent = 'נא להזין כתובת שרת API';
-    document.getElementById('btnLogin').disabled = false;
-    return;
-  }
-  try{
-    const fd = new FormData();
-    fd.append('username', u);
-    fd.append('password', p);
-    const r = await apiFetch('/api/admin/login',{method:'POST',body:fd});
-    const data = await r.json();
-    if(data.ok && data.session){
-      _session = data.session;
-      sessionStorage.setItem('cp_session', _session);
-      persistCredentials(u, p, remember);
-      showShell(u);
-      loadAll();
-    } else {
-      err.textContent = data.error || 'שגיאת כניסה';
+
+  const hasServer = !!getApiBase() || !isGithubPagesHost();
+
+  if(hasServer){
+    // ── Server mode ──
+    try{
+      const fd = new FormData();
+      fd.append('username', u);
+      fd.append('password', p);
+      const r = await apiFetch('/api/admin/login',{method:'POST',body:fd});
+      const data = await r.json();
+      if(data.ok && data.session){
+        _session = data.session;
+        _relayMode = false;
+        sessionStorage.setItem('cp_session', _session);
+        persistCredentials(u, p, remember);
+        showShell(u);
+        loadAll();
+      } else {
+        err.textContent = data.error || 'שגיאת כניסה';
+      }
+    } catch(e){
+      err.textContent = 'שגיאת רשת: '+e.message;
     }
-  } catch(e){
-    err.textContent = 'שגיאת רשת: '+e.message;
+  } else {
+    // ── Relay mode (GitHub Pages, no server) ──
+    const storedHash = localStorage.getItem(CPANEL_PASS_HASH_KEY);
+    const passHash = await sha256Text(u + ':' + p);
+    if(!storedHash){
+      // First time — set password
+      localStorage.setItem(CPANEL_PASS_HASH_KEY, passHash);
+    } else if(storedHash !== passHash){
+      err.textContent = 'שם משתמש או סיסמה שגויים';
+      document.getElementById('btnLogin').disabled = false;
+      return;
+    }
+    _session = 'relay_local_' + Date.now();
+    _relayMode = true;
+    sessionStorage.setItem('cp_session', _session);
+    persistCredentials(u, p, remember);
+    showShell(u + ' (Relay)');
+    loadAll();
+  }
   }
   document.getElementById('btnLogin').disabled = false;
 }
@@ -505,6 +536,13 @@ document.getElementById('btnLogout').addEventListener('click', ()=>{
 // ── AUTO-LOGIN if session in storage ──
 (async function(){
   if(!_session) return;
+  // Check if this is a relay session
+  if(_session.startsWith('relay_local_')){
+    _relayMode = true;
+    showShell('admin (Relay)');
+    loadAll();
+    return;
+  }
   try{
     const r = await apiFetch('/api/admin/stats',{headers:{Authorization:'Bearer '+_session}});
     if(r.ok){ showShell('admin'); loadAll(); }
@@ -520,6 +558,20 @@ async function loadAll(){
 }
 
 async function loadStats(){
+  if(_relayMode){
+    // compute stats from _reports (already loaded from relay)
+    const total = _reports.length;
+    const avg = total > 0 ? Math.round(_reports.reduce((s,r)=>s+(r.truthScore||0),0)/total) : 0;
+    const byType = {}; _reports.forEach(r=>{ const t=r.mediaType||'unknown'; byType[t]=(byType[t]||0)+1; });
+    document.getElementById('st-total').textContent = total;
+    document.getElementById('st-avg').textContent = avg + '%';
+    document.getElementById('st-video').textContent = byType.video ?? 0;
+    document.getElementById('st-image').textContent = byType.image ?? 0;
+    document.getElementById('st-text').textContent  = byType.text  ?? 0;
+    document.getElementById('st-size').textContent  = '—';
+    renderSources({});
+    return;
+  }
   try{
     const r = await apiFetch('/api/admin/stats',{headers:{Authorization:'Bearer '+_session}});
     if(!r.ok){ if(r.status===401) handleUnauth(); return; }
@@ -562,6 +614,26 @@ function renderSources(sources){
 async function loadReports(){
   const tbody = document.getElementById('reportsTbody');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="11">⏳ טוען...</td></tr>';
+
+  if(_relayMode){
+    // ── Relay mode: load from Nostr relays ──
+    try{
+      const net = window.TrueOrFakeNet;
+      if(net && typeof net.loadRelayReports === 'function'){
+        _reports = await net.loadRelayReports(100);
+      } else {
+        _reports = [];
+      }
+      updateRelayStorageStats();
+      renderTable();
+      loadStats(); // recompute stats from loaded reports
+    }catch(e){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="11">שגיאה בטעינה מ-Relay: '+esc(e.message)+'</td></tr>';
+    }
+    return;
+  }
+
+  // ── Server mode ──
   try{
     const r = await apiFetch('/api/admin/reports',{headers:{Authorization:'Bearer '+_session}});
     if(!r.ok){ if(r.status===401) handleUnauth(); return; }
@@ -729,6 +801,15 @@ function renderTable(){
       if (wrap.style.display !== 'none') { wrap.style.display = 'none'; btn.textContent = '🔽 טען JSON מלא'; return; }
       btn.textContent = '⏳ טוען...';
       btn.disabled = true;
+      if(_relayMode){
+        // In relay mode, fullData is already in _reports
+        const rep = _reports.find(r => r.id === rid);
+        wrap.querySelector('pre').textContent = JSON.stringify(rep?.fullData || rep || {}, null, 2);
+        wrap.style.display = 'block';
+        btn.textContent = '🔼 הסתר JSON';
+        btn.disabled = false;
+        return;
+      }
       try {
         const r = await apiFetch('/api/reports/' + encodeURIComponent(rid), {headers:{Authorization:'Bearer '+_session}});
         if (!r.ok) { btn.textContent = '❌ שגיאה'; btn.disabled = false; return; }
@@ -749,6 +830,12 @@ function renderTable(){
       const id = btn.dataset.id;
       if(!confirm('למחוק דוח זה?')) return;
       btn.disabled = true;
+      if(_relayMode){
+        // Relay mode: can't delete from relay, just remove from view
+        _reports = _reports.filter(x=>x.id!==id);
+        renderTable(); loadStats();
+        return;
+      }
       try{
         const r = await apiFetch('/api/admin/reports/'+encodeURIComponent(id),{method:'DELETE',headers:{Authorization:'Bearer '+_session}});
         if(r.ok){ _reports=_reports.filter(x=>x.id!==id); renderTable(); loadStats(); }
@@ -766,6 +853,11 @@ document.getElementById('btnTestDecent').addEventListener('click', runNetworkDia
 document.getElementById('btnClearAll').addEventListener('click', async ()=>{
   if(!confirm('למחוק את כל הדוחות? פעולה זו אינה הפיכה!')) return;
   if(!confirm('האם אתה בטוח לחלוטין?')) return;
+  if(_relayMode){
+    _reports = []; renderTable(); loadStats();
+    alert('הדוחות נמחקו מהתצוגה. הם עדיין קיימים ברשת Relay.');
+    return;
+  }
   try{
     const r = await apiFetch('/api/admin/reports',{method:'DELETE',headers:{Authorization:'Bearer '+_session}});
     if(r.ok){ _reports=[]; renderTable(); loadStats(); }
