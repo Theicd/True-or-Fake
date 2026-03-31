@@ -98,8 +98,24 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .owner-tag{font-family:monospace;font-size:.72rem;color:var(--muted)}
 .btn-del{background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:.9rem;padding:4px 8px;border-radius:6px;transition:background .15s}
 .btn-del:hover{background:rgba(255,85,85,.15)}
-.cost-chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:600;color:#fbbf24;background:rgba(251,191,36,.1);padding:2px 8px;border-radius:12px;border:1px solid rgba(251,191,36,.15);white-space:nowrap}
+.cost-chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:600;color:#fbbf24;background:rgba(251,191,36,.1);padding:2px 8px;border-radius:12px;border:1px solid rgba(251,191,36,.15);white-space:nowrap;cursor:pointer}
 .btn-del:disabled{opacity:.4;cursor:not-allowed}
+tr.report-row{cursor:pointer}
+tr.report-row:hover td{background:rgba(255,255,255,.03)}
+tr.detail-row{display:none}
+tr.detail-row.open{display:table-row}
+tr.detail-row td{padding:0;border-top:none}
+.cost-detail{background:rgba(15,18,28,.95);border:1px solid rgba(251,191,36,.15);border-radius:10px;margin:4px 12px 10px;padding:16px 20px;font-size:.8rem}
+.cost-detail h4{color:#fbbf24;margin:0 0 10px;font-size:.85rem;font-weight:700}
+.cost-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.cost-item{background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.cost-item .ci-model{font-size:.72rem;color:#94a3b8;font-weight:500}
+.cost-item .ci-calls{font-size:.7rem;color:#64748b}
+.cost-item .ci-usd{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:#fbbf24}
+.cost-total{margin-top:12px;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(251,191,36,.08);border-radius:8px;border:1px solid rgba(251,191,36,.12)}
+.cost-total .ct-label{color:#94a3b8;font-size:.78rem}
+.cost-total .ct-val{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:800;color:#fbbf24}
+.no-cost-msg{color:#555;font-size:.78rem}
 
 /* ── Loading / Empty ── */
 .loading-row td,.empty-row td{text-align:center;padding:32px;color:var(--muted)}
@@ -530,6 +546,54 @@ function _costCell(ec) {
   return `<span class="cost-chip" title="${calls} API calls">$${val}</span>`;
 }
 
+const MODEL_LABELS = {
+  whisper: '🎙️ Whisper (דיבור)',
+  vision: '👁️ Vision (ראייה)',
+  detr: '📦 DETR (אובייקטים)',
+  ai_class: '🤖 AI Classifier',
+  chat: '💬 DeepSeek-V3 (טקסט)',
+  chat_120b: '🧠 GPT-120B (מודיעין)',
+  'Qwen/Qwen2.5-VL-72B-Instruct': '👁️ Vision 72B',
+  'deepseek-ai/DeepSeek-V3': '💬 DeepSeek-V3',
+  'facebook/detr-resnet-50': '📦 DETR',
+  'openai/whisper-large-v3-turbo': '🎙️ Whisper',
+  'umm-maybe/AI-image-detector': '🤖 AI Classifier',
+};
+
+function _buildCostDetail(ec) {
+  if (!ec) return '<div class="no-cost-msg">אין נתוני עלות לניתוח זה</div>';
+  const usd = ec.estimated_cost_usd ?? ec.total_cost_usd ?? 0;
+  const totalCalls = ec.total_calls ?? 0;
+  if (usd <= 0 && totalCalls <= 0) return '<div class="no-cost-msg">אין נתוני עלות לניתוח זה</div>';
+
+  // Build breakdown from either calls+cost_breakdown (Python) or breakdown (JS)
+  const calls = ec.calls || {};
+  const costBreak = ec.cost_breakdown || {};
+  const jsBreak = ec.breakdown || {};
+
+  let items = '';
+  // Python format: calls={whisper:3, vision:10,...}, cost_breakdown={whisper:0.001,...}
+  if (Object.keys(calls).length > 0) {
+    for (const [key, count] of Object.entries(calls)) {
+      if (count <= 0) continue;
+      const label = MODEL_LABELS[key] || key;
+      const cost = costBreak[key] || 0;
+      items += `<div class="cost-item"><div><div class="ci-model">${esc(label)}</div><div class="ci-calls">${count} קריאות</div></div><div class="ci-usd">$${cost < 0.001 ? cost.toFixed(5) : cost.toFixed(4)}</div></div>`;
+    }
+  }
+  // JS format: breakdown={modelName: {calls:N, cost_usd:X}}
+  else if (Object.keys(jsBreak).length > 0) {
+    for (const [model, info] of Object.entries(jsBreak)) {
+      if (!info.calls) continue;
+      const label = MODEL_LABELS[model] || model.split('/').pop();
+      items += `<div class="cost-item"><div><div class="ci-model">${esc(label)}</div><div class="ci-calls">${info.calls} קריאות</div></div><div class="ci-usd">$${(info.cost_usd||0).toFixed(5)}</div></div>`;
+    }
+  }
+
+  const totalStr = usd < 0.01 ? usd.toFixed(4) : usd.toFixed(3);
+  return `<div class="cost-detail"><h4>💰 פירוט עלות ניתוח</h4><div class="cost-grid">${items || '<div class="no-cost-msg">אין פירוט</div>'}</div><div class="cost-total"><span class="ct-label">סה״כ (${totalCalls} קריאות API)</span><span class="ct-val">$${totalStr}</span></div></div>`;
+}
+
 function renderTable(){
   const tbody = document.getElementById('reportsTbody');
   if(!_reports.length){
@@ -543,7 +607,7 @@ function renderTable(){
     const scClass = sc>=60?'sc-hi':sc>=35?'sc-med':'sc-lo';
     const icon = rep.mediaType==='video'?'📺':rep.mediaType==='image'?'📸':'📄';
     const riskColor = (rep.riskLevel||'').toLowerCase()==='high'?'color:#ff5555':(rep.riskLevel||'').toLowerCase()==='medium'?'color:#e8a020':'';
-    h += `<tr>
+    h += `<tr class="report-row" data-idx="${i}">
       <td>${i+1}</td>
       <td style="white-space:nowrap;font-size:.75rem">${date}</td>
       <td title="${esc(rep.fileName)}">${esc((rep.fileName||'').slice(0,28))}${(rep.fileName||'').length>28?'…':''}</td>
@@ -556,8 +620,20 @@ function renderTable(){
       <td><span class="owner-tag">${esc((rep.owner||'').slice(0,8)+'…')}</span></td>
       <td><button class="btn-del" data-id="${esc(rep.id)}" title="מחק דוח זה">🗑</button></td>
     </tr>`;
+    h += `<tr class="detail-row" data-detail-idx="${i}"><td colspan="11">${_buildCostDetail(rep.estimatedCost)}</td></tr>`;
   });
   tbody.innerHTML = h;
+
+  // ── Toggle cost detail rows ──
+  tbody.querySelectorAll('.report-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-del')) return;
+      const idx = row.dataset.idx;
+      const detail = tbody.querySelector(`tr.detail-row[data-detail-idx="${idx}"]`);
+      if (detail) detail.classList.toggle('open');
+    });
+  });
+
   tbody.querySelectorAll('.btn-del').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const id = btn.dataset.id;
