@@ -435,7 +435,7 @@ async def save_report(request: Request):
         "confidence": int(body.get("confidence", 0)),
         "isSatire": bool(body.get("isSatire", False)),
         "summary": str(body.get("summary", ""))[:500],
-        "estimatedCost": body.get("estimatedCost") or None,
+        "estimatedCost": body.get("estimatedCost") or (body.get("fullData") or {}).get("estimated_cost") or None,
         "owner": owner,
         "fullData": body.get("fullData", {}),
     }
@@ -506,7 +506,15 @@ async def admin_get_reports(authorization: str = Header("")):
     if not _verify_session(authorization.removeprefix("Bearer ").strip()):
         return JSONResponse({"error": "אינך מורשה"}, 401)
     reports = _load_reports()
-    slim = [{k: v for k, v in r.items() if k != "fullData"} for r in reports]
+    slim = []
+    for r in reports:
+        row = {k: v for k, v in r.items() if k != "fullData"}
+        # backfill estimatedCost from fullData if missing
+        if not row.get("estimatedCost"):
+            fd_cost = (r.get("fullData") or {}).get("estimated_cost")
+            if fd_cost:
+                row["estimatedCost"] = fd_cost
+        slim.append(row)
     return JSONResponse({"reports": slim, "total": len(reports)})
 
 
