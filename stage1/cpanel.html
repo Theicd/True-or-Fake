@@ -116,8 +116,14 @@ tr.detail-row td{padding:0;border-top:none}
 .cost-total .ct-label{color:#94a3b8;font-size:.78rem}
 .cost-total .ct-val{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:800;color:#fbbf24}
 .no-cost-msg{color:#555;font-size:.78rem}
-.detail-section{margin-top:12px}
-.detail-section h4{color:#e2e8f0;margin:0 0 8px;font-size:.82rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:6px}
+.detail-section{margin-top:8px;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid rgba(255,255,255,.06);overflow:hidden}
+.detail-section .ds-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s}
+.detail-section .ds-head:hover{background:rgba(255,255,255,.04)}
+.detail-section .ds-head h4{color:#e2e8f0;margin:0;font-size:.82rem;font-weight:700}
+.detail-section .ds-arrow{color:#64748b;font-size:.7rem;transition:transform .2s}
+.detail-section.ds-open .ds-arrow{transform:rotate(90deg)}
+.detail-section .ds-body{display:none;padding:8px 14px 12px;border-top:1px solid rgba(255,255,255,.05)}
+.detail-section.ds-open .ds-body{display:block}
 .valid-row{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-bottom:4px}
 .valid-lbl{color:#94a3b8;font-size:.75rem}
 .valid-val{font-size:.78rem;font-weight:600}
@@ -575,18 +581,16 @@ const MODEL_LABELS = {
 };
 
 function _buildCostDetail(ec) {
-  if (!ec) return '<div class="no-cost-msg">אין נתוני עלות לניתוח זה</div>';
+  if (!ec) return '';
   const usd = ec.estimated_cost_usd ?? ec.total_cost_usd ?? 0;
   const totalCalls = ec.total_calls ?? 0;
-  if (usd <= 0 && totalCalls <= 0) return '<div class="no-cost-msg">אין נתוני עלות לניתוח זה</div>';
+  if (usd <= 0 && totalCalls <= 0) return '';
 
-  // Build breakdown from either calls+cost_breakdown (Python) or breakdown (JS)
   const calls = ec.calls || {};
   const costBreak = ec.cost_breakdown || {};
   const jsBreak = ec.breakdown || {};
 
   let items = '';
-  // Python format: calls={whisper:3, vision:10,...}, cost_breakdown={whisper:0.001,...}
   if (Object.keys(calls).length > 0) {
     for (const [key, count] of Object.entries(calls)) {
       if (count <= 0) continue;
@@ -594,9 +598,7 @@ function _buildCostDetail(ec) {
       const cost = costBreak[key] || 0;
       items += `<div class="cost-item"><div><div class="ci-model">${esc(label)}</div><div class="ci-calls">${count} קריאות</div></div><div class="ci-usd">$${cost < 0.001 ? cost.toFixed(5) : cost.toFixed(4)}</div></div>`;
     }
-  }
-  // JS format: breakdown={modelName: {calls:N, cost_usd:X}}
-  else if (Object.keys(jsBreak).length > 0) {
+  } else if (Object.keys(jsBreak).length > 0) {
     for (const [model, info] of Object.entries(jsBreak)) {
       if (!info.calls) continue;
       const label = MODEL_LABELS[model] || model.split('/').pop();
@@ -605,45 +607,42 @@ function _buildCostDetail(ec) {
   }
 
   const totalStr = usd < 0.01 ? usd.toFixed(4) : usd.toFixed(3);
-  return `<div class="cost-detail"><h4>💰 פירוט עלות ניתוח</h4><div class="cost-grid">${items || '<div class="no-cost-msg">אין פירוט</div>'}</div><div class="cost-total"><span class="ct-label">סה״כ (${totalCalls} קריאות API)</span><span class="ct-val">$${totalStr}</span></div></div>`;
+  return `<div class="detail-section"><div class="ds-head"><h4>💰 פירוט עלות ניתוח</h4><span class="ds-arrow">▶</span></div><div class="ds-body"><div class="cost-grid">${items || '<div class="no-cost-msg">אין פירוט</div>'}</div><div class="cost-total"><span class="ct-label">סה״כ (${totalCalls} קריאות API)</span><span class="ct-val">$${totalStr}</span></div></div></div>`;
 }
 
 function _buildValidationDetail(valid) {
   if (!valid || !Object.keys(valid).length) return '';
-  let h = '<div class="detail-section"><h4>✅ אימות תוצאות</h4>';
   const isValid = valid.is_valid;
-  h += `<div class="valid-row"><span class="valid-lbl">תקף</span><span class="valid-val" style="color:${isValid ? '#009664' : '#ff5555'}">${isValid ? '✅ תקין' : '❌ לא תקין'}</span></div>`;
+  let body = `<div class="valid-row"><span class="valid-lbl">תקף</span><span class="valid-val" style="color:${isValid ? '#009664' : '#ff5555'}">${isValid ? '✅ תקין' : '❌ לא תקין'}</span></div>`;
   if (valid.corrected_confidence) {
-    h += `<div class="valid-row"><span class="valid-lbl">ביטחון מתוקן</span><span class="valid-val" style="color:#818cf8">${esc(valid.corrected_confidence)}</span></div>`;
+    body += `<div class="valid-row"><span class="valid-lbl">ביטחון מתוקן</span><span class="valid-val" style="color:#818cf8">${esc(valid.corrected_confidence)}</span></div>`;
   }
   if (valid.issues?.length) {
-    h += '<ul class="valid-issues">';
-    valid.issues.forEach(i => { h += '<li>' + esc(i) + '</li>'; });
-    h += '</ul>';
+    body += '<ul class="valid-issues">';
+    valid.issues.forEach(i => { body += '<li>' + esc(i) + '</li>'; });
+    body += '</ul>';
   }
-  h += '</div>';
-  return h;
+  return `<div class="detail-section"><div class="ds-head"><h4>✅ אימות תוצאות</h4><span class="ds-arrow">▶</span></div><div class="ds-body">${body}</div></div>`;
 }
 
 function _buildPipelineDetail(pipeline) {
   if (!pipeline?.length) return '';
-  let h = '<div class="detail-section"><h4>⚙️ צינור עיבוד</h4>';
+  let body = '';
   pipeline.forEach((s, i) => {
     const name = s.name || s.step || 'Step ' + i;
     const model = s.model || (s.models ? s.models.join(', ') : '');
     const ms = s.duration_ms || 0;
-    h += '<div class="pipe-step-row">';
-    h += `<span class="pipe-name">${esc(name)}</span>`;
-    if (model) h += `<span class="pipe-model">${esc(model)}</span>`;
-    if (ms) h += `<span class="pipe-ms">${ms}ms</span>`;
-    h += '</div>';
+    body += '<div class="pipe-step-row">';
+    body += `<span class="pipe-name">${esc(name)}</span>`;
+    if (model) body += `<span class="pipe-model">${esc(model)}</span>`;
+    if (ms) body += `<span class="pipe-ms">${ms}ms</span>`;
+    body += '</div>';
   });
-  h += '</div>';
-  return h;
+  return `<div class="detail-section"><div class="ds-head"><h4>⚙️ צינור עיבוד</h4><span class="ds-arrow">▶</span></div><div class="ds-body">${body}</div></div>`;
 }
 
 function _buildJsonButton(reportId) {
-  return `<div class="detail-section"><h4>{ } JSON גולמי</h4><button class="btn-load-json" data-report-id="${esc(reportId)}">🔽 טען JSON מלא</button><div class="raw-json-wrap" style="display:none"><pre></pre></div></div>`;
+  return `<div class="detail-section"><div class="ds-head"><h4>{ } JSON גולמי</h4><span class="ds-arrow">▶</span></div><div class="ds-body"><button class="btn-load-json" data-report-id="${esc(reportId)}">🔽 טען JSON מלא</button><div class="raw-json-wrap" style="display:none"><pre></pre></div></div></div>`;
 }
 
 function _buildDetailPanel(rep) {
@@ -692,6 +691,14 @@ function renderTable(){
       const idx = row.dataset.idx;
       const detail = tbody.querySelector(`tr.detail-row[data-detail-idx="${idx}"]`);
       if (detail) detail.classList.toggle('open');
+    });
+  });
+
+  // ── Toggle collapsible sections inside detail rows ──
+  tbody.querySelectorAll('.detail-section .ds-head').forEach(head => {
+    head.addEventListener('click', (e) => {
+      e.stopPropagation();
+      head.closest('.detail-section').classList.toggle('ds-open');
     });
   });
 
