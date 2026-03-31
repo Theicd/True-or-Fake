@@ -435,6 +435,7 @@ async def save_report(request: Request):
         "confidence": int(body.get("confidence", 0)),
         "isSatire": bool(body.get("isSatire", False)),
         "summary": str(body.get("summary", ""))[:500],
+        "estimatedCost": body.get("estimatedCost") or None,
         "owner": owner,
         "fullData": body.get("fullData", {}),
     }

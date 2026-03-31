@@ -57,6 +57,25 @@ body{background:var(--bg);color:var(--text);font-family:'Assistant',sans-serif;m
 .src-chip.off{border-color:rgba(255,176,32,.3);color:#ffd28a}
 .rss-list{font-size:.76rem;color:var(--muted);line-height:1.5;word-break:break-all}
 
+/* ── Decentralized network panel ── */
+.decent-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+.decent-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.decent-head h3{font-size:.92rem;flex:1}
+.decent-note{font-size:.74rem;color:var(--muted)}
+.btn-test{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;transition:border-color .2s,color .2s}
+.btn-test:hover{border-color:var(--accent);color:var(--accent)}
+.decent-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.net-card{background:#0f1520;border:1px solid var(--border);border-radius:10px;padding:10px}
+.net-card h4{font-size:.82rem;margin-bottom:8px;color:#b4c7d8}
+.net-list{display:flex;flex-direction:column;gap:6px}
+.net-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:7px 8px}
+.net-url{font-size:.72rem;color:var(--muted);direction:ltr;text-align:left;word-break:break-all}
+.net-status{font-size:.72rem;font-weight:700;white-space:nowrap}
+.st-ok{color:#9ff4cd}
+.st-fail{color:#ff9a9a}
+.st-warn{color:#ffd28a}
+.relay-metrics{margin-top:8px;font-size:.78rem;color:#9ab0c2}
+
 /* ── Toolbar ── */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar h2{font-size:1rem;flex:1}
@@ -79,6 +98,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .owner-tag{font-family:monospace;font-size:.72rem;color:var(--muted)}
 .btn-del{background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:.9rem;padding:4px 8px;border-radius:6px;transition:background .15s}
 .btn-del:hover{background:rgba(255,85,85,.15)}
+.cost-chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:600;color:#fbbf24;background:rgba(251,191,36,.1);padding:2px 8px;border-radius:12px;border:1px solid rgba(251,191,36,.15);white-space:nowrap}
 .btn-del:disabled{opacity:.4;cursor:not-allowed}
 
 /* ── Loading / Empty ── */
@@ -125,6 +145,8 @@ tr:hover td{background:rgba(255,255,255,.025)}
       <div class="stat-card"><div class="sv" id="st-video">—</div><div class="sl">וידאו</div></div>
       <div class="stat-card"><div class="sv" id="st-image">—</div><div class="sl">תמונות</div></div>
       <div class="stat-card"><div class="sv" id="st-text">—</div><div class="sl">טקסט</div></div>
+      <div class="stat-card"><div class="sv" id="st-relay-saved">—</div><div class="sl">נשמרו ב-Relay</div></div>
+      <div class="stat-card"><div class="sv" id="st-relay-rate">—</div><div class="sl">אחוז שמירה ל-Relay</div></div>
       <div class="stat-card"><div class="sv" id="st-size">—</div><div class="sl">גודל (KB)</div></div>
     </div>
 
@@ -132,6 +154,25 @@ tr:hover td{background:rgba(255,255,255,.025)}
       <h3>מקורות מידע מחוברים</h3>
       <div class="sources-grid" id="sourcesGrid"></div>
       <div class="rss-list" id="rssFeeds"></div>
+    </div>
+
+    <div class="decent-panel">
+      <div class="decent-head">
+        <h3>שרתי Relay ו-Blossom (מבוזר)</h3>
+        <button class="btn-test" id="btnTestDecent">🔎 בדוק קישוריות</button>
+        <span class="decent-note" id="decentLastCheck">לא בוצעה בדיקה</span>
+      </div>
+      <div class="decent-grid">
+        <div class="net-card">
+          <h4>Relay Servers</h4>
+          <div class="net-list" id="relayList"></div>
+        </div>
+        <div class="net-card">
+          <h4>Blossom Servers</h4>
+          <div class="net-list" id="blossomList"></div>
+        </div>
+      </div>
+      <div class="relay-metrics" id="decentSummary">סטטוס בדיקות יופיע כאן לאחר הרצה.</div>
     </div>
 
     <!-- Toolbar -->
@@ -151,27 +192,187 @@ tr:hover td{background:rgba(255,255,255,.025)}
             <th>קובץ</th>
             <th>סוג</th>
             <th>ציון</th>
+            <th>עלות</th>
             <th>נרטיב</th>
             <th>רמת סיכון</th>
+            <th>Relay</th>
             <th>בעלים</th>
             <th>מחיקה</th>
           </tr>
         </thead>
         <tbody id="reportsTbody">
-          <tr class="loading-row"><td colspan="9">⏳ טוען...</td></tr>
+          <tr class="loading-row"><td colspan="11">⏳ טוען...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
+<script src="./network-config.js"></script>
 <script>
-const API = '';
+const API_BASE_KEY = 'tof_api_base';
+const API_BASE_HINT = 'api_base';
 let _session = sessionStorage.getItem('cp_session') || '';
 let _reports = [];
 const CREDS_KEY = 'cpanel_saved_credentials_v1';
+const DEFAULT_NETWORK_CONFIG = {
+  relayUrls: ['wss://relay.snort.social','wss://nos.lol','wss://relay.damus.io'],
+  blossomServers: [{url:'https://blossom.band'}],
+};
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function isGithubPagesHost(){
+  return String(location.hostname||'').toLowerCase().endsWith('github.io');
+}
+
+function normalizeApiBase(v){
+  const x = String(v||'').trim();
+  return x ? x.replace(/\/+$/,'') : '';
+}
+
+function getApiBase(){
+  const qp = new URLSearchParams(location.search).get(API_BASE_HINT);
+  if(qp){
+    const q = normalizeApiBase(qp);
+    if(q){ localStorage.setItem(API_BASE_KEY, q); return q; }
+  }
+  const stored = normalizeApiBase(localStorage.getItem(API_BASE_KEY)||'');
+  if(stored) return stored;
+  return '';
+}
+
+function apiUrl(path){
+  const base = getApiBase();
+  return base ? (base + path) : path;
+}
+
+function apiFetch(path, options){
+  return fetch(apiUrl(path), options);
+}
+
+function apiHelp(){
+  return 'נדרש שרת API פעיל. פתח עם ?api_base=https://your-server.example.com או הגדר localStorage["tof_api_base"].';
+}
+
+function getNetworkConfig(){
+  const cfg = window.TOF_NETWORK_CONFIG || {};
+  const relayUrls = (Array.isArray(cfg.relayUrls) ? cfg.relayUrls : DEFAULT_NETWORK_CONFIG.relayUrls)
+    .map(x => String(x || '').trim())
+    .filter(Boolean);
+  const blossomServers = (Array.isArray(cfg.blossomServers) ? cfg.blossomServers : DEFAULT_NETWORK_CONFIG.blossomServers)
+    .map(x => typeof x === 'string' ? { url: x } : x)
+    .map(x => ({ url: String((x && x.url) || '').trim() }))
+    .filter(x => !!x.url);
+  return { relayUrls, blossomServers };
+}
+
+function renderNetworkServers(){
+  const relayList = document.getElementById('relayList');
+  const blossomList = document.getElementById('blossomList');
+  if(!relayList || !blossomList) return;
+
+  const net = getNetworkConfig();
+
+  relayList.innerHTML = (net.relayUrls || []).map(url =>
+    `<div class="net-row" data-kind="relay" data-url="${esc(url)}"><span class="net-url">${esc(url)}</span><span class="net-status st-warn">ממתין</span></div>`
+  ).join('') || '<div class="net-row"><span class="net-url">אין Relay מוגדר</span><span class="net-status st-fail">לא מוגדר</span></div>';
+
+  blossomList.innerHTML = (net.blossomServers || []).map(s =>
+    `<div class="net-row" data-kind="blossom" data-url="${esc(s.url)}"><span class="net-url">${esc(s.url)}</span><span class="net-status st-warn">ממתין</span></div>`
+  ).join('') || '<div class="net-row"><span class="net-url">אין Blossom מוגדר</span><span class="net-status st-fail">לא מוגדר</span></div>';
+}
+
+function setNetworkRowStatus(kind, url, status, text){
+  const rows = Array.from(document.querySelectorAll(`.net-row[data-kind="${kind}"]`));
+  const row = rows.find(r => r.dataset.url === url);
+  if(!row) return;
+  const node = row.querySelector('.net-status');
+  if(!node) return;
+  node.className = 'net-status ' + (status === 'ok' ? 'st-ok' : status === 'fail' ? 'st-fail' : 'st-warn');
+  node.textContent = text;
+}
+
+async function testRelay(url, timeoutMs = 6000){
+  return new Promise((resolve) => {
+    let done = false;
+    const ws = new WebSocket(url);
+    const timer = setTimeout(() => {
+      if(done) return;
+      done = true;
+      try{ ws.close(); }catch(_){ }
+      resolve({ ok: false, reason: 'timeout' });
+    }, timeoutMs);
+
+    ws.onopen = () => {
+      if(done) return;
+      done = true;
+      clearTimeout(timer);
+      try{ ws.close(); }catch(_){ }
+      resolve({ ok: true, reason: 'connected' });
+    };
+    ws.onerror = () => {
+      if(done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve({ ok: false, reason: 'error' });
+    };
+  });
+}
+
+async function testBlossom(url, timeoutMs = 7000){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+    clearTimeout(timer);
+    return { ok: true, reason: 'reachable' };
+  }catch(e){
+    clearTimeout(timer);
+    return { ok: false, reason: (e && e.name) || 'error' };
+  }
+}
+
+async function runNetworkDiagnostics(){
+  const net = getNetworkConfig();
+  const note = document.getElementById('decentLastCheck');
+  const summary = document.getElementById('decentSummary');
+
+  if(note) note.textContent = 'מבצע בדיקה...';
+  if(summary) summary.textContent = 'בודק קישוריות לשרתי Relay ו-Blossom...';
+
+  let relayOk = 0;
+  for(const url of (net.relayUrls || [])){
+    setNetworkRowStatus('relay', url, 'warn', 'בודק...');
+    const t = await testRelay(url);
+    if(t.ok){ relayOk += 1; setNetworkRowStatus('relay', url, 'ok', 'ON'); }
+    else { setNetworkRowStatus('relay', url, 'fail', t.reason === 'timeout' ? 'Timeout' : 'OFF'); }
+  }
+
+  let blossomOk = 0;
+  for(const s of (net.blossomServers || [])){
+    const url = s.url;
+    setNetworkRowStatus('blossom', url, 'warn', 'בודק...');
+    const t = await testBlossom(url);
+    if(t.ok){ blossomOk += 1; setNetworkRowStatus('blossom', url, 'ok', 'ON'); }
+    else { setNetworkRowStatus('blossom', url, 'fail', t.reason === 'AbortError' ? 'Timeout' : 'OFF'); }
+  }
+
+  const now = new Date();
+  const ts = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if(note) note.textContent = `בדיקה אחרונה: ${ts}`;
+  if(summary) summary.textContent = `Relay פעילים: ${relayOk}/${(net.relayUrls || []).length} · Blossom פעילים: ${blossomOk}/${(net.blossomServers || []).length}`;
+}
+
+function updateRelayStorageStats(){
+  const total = Array.isArray(_reports) ? _reports.length : 0;
+  const relaySaved = (_reports || []).filter(r => !!r.relay_saved).length;
+  const rate = total > 0 ? Math.round((relaySaved / total) * 100) : 0;
+  const savedNode = document.getElementById('st-relay-saved');
+  const rateNode = document.getElementById('st-relay-rate');
+  if(savedNode) savedNode.textContent = relaySaved;
+  if(rateNode) rateNode.textContent = total > 0 ? `${rate}%` : '0%';
+}
 
 // ── AUTH ──
 document.getElementById('btnLogin').addEventListener('click', doLogin);
@@ -187,11 +388,16 @@ async function doLogin(){
   err.textContent = '';
   if(!u||!p){ err.textContent='נא למלא את כל השדות'; return; }
   document.getElementById('btnLogin').disabled = true;
+  if(isGithubPagesHost() && !getApiBase()){
+    err.textContent = apiHelp();
+    document.getElementById('btnLogin').disabled = false;
+    return;
+  }
   try{
     const fd = new FormData();
     fd.append('username', u);
     fd.append('password', p);
-    const r = await fetch('/api/admin/login',{method:'POST',body:fd});
+    const r = await apiFetch('/api/admin/login',{method:'POST',body:fd});
     const data = await r.json();
     if(data.ok && data.session){
       _session = data.session;
@@ -213,6 +419,7 @@ function showShell(username){
   const shell = document.getElementById('shell');
   shell.style.display = 'flex';
   document.getElementById('adminBadge').textContent = username || 'admin';
+  renderNetworkServers();
 }
 
 function persistCredentials(username, password, remember){
@@ -245,7 +452,7 @@ document.getElementById('btnLogout').addEventListener('click', ()=>{
 (async function(){
   if(!_session) return;
   try{
-    const r = await fetch('/api/admin/stats',{headers:{Authorization:'Bearer '+_session}});
+    const r = await apiFetch('/api/admin/stats',{headers:{Authorization:'Bearer '+_session}});
     if(r.ok){ showShell('admin'); loadAll(); }
     else { _session=''; sessionStorage.removeItem('cp_session'); }
   }catch(e){ /* ignore */ }
@@ -255,11 +462,12 @@ document.getElementById('btnLogout').addEventListener('click', ()=>{
 async function loadAll(){
   loadStats();
   loadReports();
+  runNetworkDiagnostics();
 }
 
 async function loadStats(){
   try{
-    const r = await fetch('/api/admin/stats',{headers:{Authorization:'Bearer '+_session}});
+    const r = await apiFetch('/api/admin/stats',{headers:{Authorization:'Bearer '+_session}});
     if(!r.ok){ if(r.status===401) handleUnauth(); return; }
     const d = await r.json();
     document.getElementById('st-total').textContent = d.total ?? '—';
@@ -299,22 +507,33 @@ function renderSources(sources){
 
 async function loadReports(){
   const tbody = document.getElementById('reportsTbody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="9">⏳ טוען...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="11">⏳ טוען...</td></tr>';
   try{
-    const r = await fetch('/api/admin/reports',{headers:{Authorization:'Bearer '+_session}});
+    const r = await apiFetch('/api/admin/reports',{headers:{Authorization:'Bearer '+_session}});
     if(!r.ok){ if(r.status===401) handleUnauth(); return; }
     const d = await r.json();
     _reports = d.reports || [];
+    updateRelayStorageStats();
     renderTable();
   }catch(e){
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">שגיאת רשת</td></tr>';
+    updateRelayStorageStats();
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="11">שגיאת רשת</td></tr>';
   }
+}
+
+function _costCell(ec) {
+  if (!ec) return '<span style="color:#555">—</span>';
+  const usd = ec.estimated_cost_usd ?? ec.total_cost_usd ?? 0;
+  if (usd <= 0) return '<span style="color:#555">—</span>';
+  const val = usd < 0.01 ? usd.toFixed(4) : usd.toFixed(3);
+  const calls = ec.total_calls || 0;
+  return `<span class="cost-chip" title="${calls} API calls">$${val}</span>`;
 }
 
 function renderTable(){
   const tbody = document.getElementById('reportsTbody');
   if(!_reports.length){
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">אין דוחות</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="11">אין דוחות</td></tr>';
     return;
   }
   let h = '';
@@ -330,8 +549,10 @@ function renderTable(){
       <td title="${esc(rep.fileName)}">${esc((rep.fileName||'').slice(0,28))}${(rep.fileName||'').length>28?'…':''}</td>
       <td>${icon} ${esc(rep.mediaType||'')}</td>
       <td><span class="score-chip ${scClass}">${sc}%</span></td>
+      <td>${_costCell(rep.estimatedCost)}</td>
       <td><span class="narr-pill">${esc(rep.narrative||'')}</span></td>
       <td style="${riskColor}">${esc(rep.riskLevel||'')}</td>
+      <td>${rep.relay_saved ? '<span class="src-chip ok" style="padding:2px 8px">✅ כן</span>' : '<span class="src-chip off" style="padding:2px 8px">—</span>'}</td>
       <td><span class="owner-tag">${esc((rep.owner||'').slice(0,8)+'…')}</span></td>
       <td><button class="btn-del" data-id="${esc(rep.id)}" title="מחק דוח זה">🗑</button></td>
     </tr>`;
@@ -343,7 +564,7 @@ function renderTable(){
       if(!confirm('למחוק דוח זה?')) return;
       btn.disabled = true;
       try{
-        const r = await fetch('/api/admin/reports/'+encodeURIComponent(id),{method:'DELETE',headers:{Authorization:'Bearer '+_session}});
+        const r = await apiFetch('/api/admin/reports/'+encodeURIComponent(id),{method:'DELETE',headers:{Authorization:'Bearer '+_session}});
         if(r.ok){ _reports=_reports.filter(x=>x.id!==id); renderTable(); loadStats(); }
         else{ const d=await r.json(); alert(d.error||'שגיאה'); btn.disabled=false; }
       }catch(e){ alert('שגיאת רשת'); btn.disabled=false; }
@@ -353,13 +574,14 @@ function renderTable(){
 
 // ── REFRESH ──
 document.getElementById('btnRefresh').addEventListener('click', loadAll);
+document.getElementById('btnTestDecent').addEventListener('click', runNetworkDiagnostics);
 
 // ── CLEAR ALL ──
 document.getElementById('btnClearAll').addEventListener('click', async ()=>{
   if(!confirm('למחוק את כל הדוחות? פעולה זו אינה הפיכה!')) return;
   if(!confirm('האם אתה בטוח לחלוטין?')) return;
   try{
-    const r = await fetch('/api/admin/reports',{method:'DELETE',headers:{Authorization:'Bearer '+_session}});
+    const r = await apiFetch('/api/admin/reports',{method:'DELETE',headers:{Authorization:'Bearer '+_session}});
     if(r.ok){ _reports=[]; renderTable(); loadStats(); }
     else{ const d=await r.json(); alert(d.error||'שגיאה'); }
   }catch(e){ alert('שגיאת רשת'); }
