@@ -230,15 +230,6 @@ body::before{
     font-size:.7rem;font-weight:600;cursor:pointer;transition:.2s;
 }
 .btn-lang:hover{background:rgba(100,150,200,.12)}
-.lang-dropdown-wrap{position:relative;display:flex;align-items:center}
-.lang-select{
-    position:absolute;top:0;left:0;width:100%;height:100%;
-    opacity:0;cursor:pointer;font-size:.75rem;
-}
-.cap-card-highlight{
-    border:1px solid rgba(0,229,255,.25);
-    background:linear-gradient(135deg,rgba(0,229,255,.06),rgba(139,92,246,.06));
-}
 .btn-user{
     display:flex;align-items:center;gap:4px;
     background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(139,92,246,.12));
@@ -437,6 +428,7 @@ html[dir="ltr"] .modal-close{left:auto;right:10px}
 .hero-meta-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .hero-trust-state{display:inline-flex;align-items:center;gap:6px;color:#b8c8d7;font-size:.74rem;font-weight:600}
 .hero-date{font-size:.72rem;color:var(--text-secondary)}
+.hero-cost{font-size:.7rem;color:#fbbf24;font-weight:600;font-family:'JetBrains Mono',monospace;background:rgba(251,191,36,.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(251,191,36,.18)}
 .hero-card.trust-high .hero-threat{background:rgba(0,255,148,.1);border-color:rgba(0,255,148,.24);color:var(--accent-truth)}
 .hero-card.trust-low .hero-threat{background:rgba(255,59,59,.1);border-color:rgba(255,59,59,.22);color:var(--accent-danger)}
 .hero-card.risk-medium .hero-threat{background:rgba(255,176,32,.1);border-color:rgba(255,176,32,.22);color:var(--accent-warning)}
@@ -481,6 +473,7 @@ html[dir="ltr"] .history-item:hover{transform:translateX(2px)}
 .hi-date{font-size:.68rem;color:var(--text-secondary)}
 .hi-sep{opacity:.45}
 .hi-type{color:#8adffc}
+.hi-cost{color:#fbbf24;font-weight:600;font-family:'JetBrains Mono',monospace;font-size:.64rem;background:rgba(251,191,36,.08);padding:1px 5px;border-radius:6px;border:1px solid rgba(251,191,36,.15)}
 .hi-scores{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .hi-score{
     font-size:.84rem;font-weight:800;

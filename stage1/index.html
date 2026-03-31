@@ -37,27 +37,7 @@
         </div>
         <!-- כפתורי פעולה: שפה + CPanel + התחברות -->
         <div class="header-actions">
-            <div class="lang-dropdown-wrap">
-                <button class="btn-lang" id="langBtn" aria-label="Select language">🇮🇱 HE</button>
-                <select class="lang-select" id="langSelect" onchange="setLang(this.value)" aria-label="Select language">
-                    <option value="he">🇮🇱 עברית</option>
-                    <option value="en">🇺🇸 English</option>
-                    <option value="ru">🇷🇺 Русский</option>
-                    <option value="ar">🇸🇦 العربية</option>
-                    <option value="fr">🇫🇷 Français</option>
-                    <option value="es">🇪🇸 Español</option>
-                    <option value="de">🇩🇪 Deutsch</option>
-                    <option value="pt">🇧🇷 Português</option>
-                    <option value="zh">🇨🇳 中文</option>
-                    <option value="ja">🇯🇵 日本語</option>
-                    <option value="ko">🇰🇷 한국어</option>
-                    <option value="tr">🇹🇷 Türkçe</option>
-                    <option value="hi">🇮🇳 हिन्दी</option>
-                    <option value="it">🇮🇹 Italiano</option>
-                    <option value="uk">🇺🇦 Українська</option>
-                    <option value="pl">🇵🇱 Polski</option>
-                </select>
-            </div>
+            <button class="btn-lang" id="langBtn" aria-label="Toggle language">EN</button>
             <button class="btn-cpanel" onclick="window.open((location.hostname === '127.0.0.1' || location.hostname === 'localhost') ? '/cpanel' : './cpanel.html','_blank')" aria-label="Admin CPanel" title="Admin CPanel">⚙️</button>
             <button class="btn-user" id="btnUser">
                 <span class="user-icon">👤</span>
@@ -157,6 +137,7 @@
                 <div class="hero-meta-row">
                     <span class="hero-trust-state" id="heroTrustState">Likely Authentic</span>
                     <p class="hero-date" id="heroDate">24.03.2026</p>
+                    <span class="hero-cost hidden" id="heroCost"></span>
                 </div>
             </div>
         </div>
@@ -276,11 +257,6 @@
                 <span class="cap-icon">📊</span>
                 <h4 data-he="דוח אמינות" data-en="Credibility Report">דוח אמינות</h4>
                 <p data-he="ציון אמינות, אותנטיות וסיכון עם הסבר מלא, טענות שאומתו ומקורות שנמצאו" data-en="Credibility, authenticity and risk scores with full explanation, verified claims and sources found">ציון אמינות, אותנטיות וסיכון עם הסבר מלא, טענות שאומתו ומקורות שנמצאו</p>
-            </div>
-            <div class="cap-card cap-card-highlight">
-                <span class="cap-icon">🌍</span>
-                <h4 data-he="90+ שפות" data-en="90+ Languages">90+ שפות</h4>
-                <p data-he="מזהה דיבור ב-90+ שפות (Whisper), מתרגם אוטומטית את הדוח ל-16 שפות ממשק" data-en="Recognizes speech in 90+ languages (Whisper) and auto-translates reports into 16 interface languages">מזהה דיבור ב-90+ שפות (Whisper), מתרגם אוטומטית את הדוח ל-16 שפות ממשק</p>
             </div>
         </div>
         <div class="info-footer">

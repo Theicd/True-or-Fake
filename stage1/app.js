@@ -259,6 +259,14 @@ async function resolveHistoryReport(item) {
     return buildFallbackReportFromHistory(item);
 }
 
+function _normalizeCost(ec) {
+    if (!ec) return null;
+    return {
+        estimated_cost_usd: ec.estimated_cost_usd ?? ec.total_cost_usd ?? 0,
+        total_calls: ec.total_calls ?? 0,
+    };
+}
+
 async function saveToHistory(data, fileName, extra = {}) {
     const ui = data.ui_data || {};
     const metrics = ui.ui_metrics || {};
@@ -275,6 +283,7 @@ async function saveToHistory(data, fileName, extra = {}) {
         confidence: metrics.confidence_level ?? 0,
         isSatire: !!(ui.satire_detected),
         summary: (ui.ui_summary || '').slice(0, 200),
+        estimatedCost: _normalizeCost(data.estimated_cost),
         mediaUrl: extra.mediaUrl || '',
         relay_saved: false,
         relay_event_id: '',
@@ -414,6 +423,20 @@ async function renderHistory() {
         const d = new Date(heroItem.date);
         $('heroDate').textContent = d.toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
+        // ── עלות משוערת ──
+        const heroCostEl = $('heroCost');
+        if (heroCostEl) {
+            const ec = heroItem.estimatedCost;
+            if (ec && ec.estimated_cost_usd > 0) {
+                const cv = ec.estimated_cost_usd < 0.01 ? ec.estimated_cost_usd.toFixed(4) : ec.estimated_cost_usd.toFixed(3);
+                heroCostEl.textContent = `\ud83d\udcb2${cv}`;
+                heroCostEl.title = `${isHe ? '\u05e2\u05dc\u05d5\u05ea \u05de\u05e9\u05d5\u05e2\u05e8\u05ea' : 'Estimated cost'}: $${cv} (${ec.total_calls} ${isHe ? '\u05e7\u05e8\u05d9\u05d0\u05d5\u05ea API' : 'API calls'})`;
+                heroCostEl.classList.remove('hidden');
+            } else {
+                heroCostEl.classList.add('hidden');
+            }
+        }
+
         // ── תצוגת מדיה בכרטיס Hero ──
         const heroMedia = $('heroMedia');
         if (heroMedia) {
@@ -474,7 +497,14 @@ async function renderHistory() {
         h += `<div class="hi-title">${esc(item.fileName)}</div>`;
         h += `<span class="hi-risk hi-risk-${riskClass}">${riskText}</span>`;
         h += `</div>`;
-        h += `<div class="hi-meta"><span class="hi-date">${dateStr}</span><span class="hi-sep">•</span><span class="hi-type">${mediaLabel(item.mediaType, isHe)}</span></div>`;
+        h += `<div class="hi-meta"><span class="hi-date">${dateStr}</span><span class="hi-sep">•</span><span class="hi-type">${mediaLabel(item.mediaType, isHe)}</span>`;
+        if (item.estimatedCost && item.estimatedCost.estimated_cost_usd > 0) {
+            const costVal = item.estimatedCost.estimated_cost_usd < 0.01
+                ? item.estimatedCost.estimated_cost_usd.toFixed(4)
+                : item.estimatedCost.estimated_cost_usd.toFixed(3);
+            h += `<span class="hi-sep">•</span><span class="hi-cost" title="${isHe ? 'עלות משוערת' : 'Estimated cost'}: $${costVal} (${item.estimatedCost.total_calls} ${isHe ? 'קריאות API' : 'API calls'})">💲${costVal}</span>`;
+        }
+        h += `</div>`;
         h += `</div>`;
         h += `<div class="hi-scores">`;
         h += `<span class="hi-score ${scoreClass}">${score}%</span>`;
