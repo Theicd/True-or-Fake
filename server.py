@@ -394,7 +394,14 @@ async def get_reports(limit: int = 50):
     reports = _load_reports()
     slim = []
     for r in reports[:min(limit, REPORTS_MAX)]:
-        slim.append({k: v for k, v in r.items() if k != "fullData"})
+        row = {k: v for k, v in r.items() if k != "fullData"}
+        fd = r.get("fullData") or {}
+        # backfill estimatedCost from fullData if missing
+        if not row.get("estimatedCost"):
+            fd_cost = fd.get("estimated_cost")
+            if fd_cost:
+                row["estimatedCost"] = fd_cost
+        slim.append(row)
     return JSONResponse({"reports": slim, "total": len(reports)})
 
 
@@ -418,8 +425,10 @@ async def save_report(request: Request):
 
     # token can come from JSON body ('hf_token_hint') or env fallback
     token = str(body.get("hf_token_hint", "")).strip() or os.getenv("HF_TOKEN", "")
+    if not token:
+        return JSONResponse({"error": "נדרש טוקן"}, 400)
 
-    owner = _token_prefix(token) if token else "anonymous"
+    owner = _token_prefix(token)
     report = {
         "id": body.get("id") or (str(int(time.time() * 1000)) + "_" + secrets.token_hex(3)),
         "date": body.get("date") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
