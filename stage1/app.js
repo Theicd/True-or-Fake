@@ -823,9 +823,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── כפתור ניתוח ──
     $('btnGo').addEventListener('click', startAnalysis);
 
-    // ── ניתוח חדש (מתוך דוח) ──
-    $('btnNewAnalysis').addEventListener('click', () => { showScreen('analyze'); });
-
     // ── ביטול ──
     $('btnCancel').addEventListener('click', () => { showScreen('history'); renderHistory(); });
 
