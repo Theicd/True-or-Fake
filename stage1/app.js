@@ -133,14 +133,13 @@ async function loadSharedHistory(force = false) {
             const data = await r.json();
             serverHistory = data.reports || [];
         }
-        const localHistory = getLocalHistory();
-        const relayHistory = await loadRelayHistory(25);
-        _sharedHistory = mergeHistoryLists(mergeHistoryLists(serverHistory, localHistory), relayHistory);
+        // Server is THE source of truth
+        _sharedHistory = serverHistory.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        // Sync localStorage to match server (backup only)
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(_sharedHistory)); } catch (e) { /* quota */ }
     } catch (e) {
-        // fallback to local + relay if server unreachable
-        const local = getLocalHistory();
-        const relay = await loadRelayHistory(25);
-        _sharedHistory = mergeHistoryLists(local, relay);
+        // Offline fallback — use localStorage
+        _sharedHistory = getLocalHistory();
     } finally {
         _sharedLoading = false;
     }
@@ -293,14 +292,12 @@ async function saveToHistory(data, fileName, extra = {}) {
     // ── שמירה לשרת (היסטוריה משותפת) ──
     const token = ($('token') && $('token').value.trim()) || '';
     try {
-        const payload = { ...entry };
-        if (token) payload.hf_token_hint = token;
         await apiFetch('/api/reports/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ ...entry, hf_token_hint: token }),
         });
-    } catch (e) { /* silent — still save locally */ }
+    } catch (e) { console.warn('Server save failed:', e); }
 
     // ── שמירה מבוזרת ל-Relay (כמו SOS) ──
     try {
