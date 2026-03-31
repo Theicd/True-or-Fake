@@ -418,10 +418,8 @@ async def save_report(request: Request):
 
     # token can come from JSON body ('hf_token_hint') or env fallback
     token = str(body.get("hf_token_hint", "")).strip() or os.getenv("HF_TOKEN", "")
-    if not token:
-        return JSONResponse({"error": "נדרש טוקן"}, 400)
 
-    owner = _token_prefix(token)
+    owner = _token_prefix(token) if token else "anonymous"
     report = {
         "id": body.get("id") or (str(int(time.time() * 1000)) + "_" + secrets.token_hex(3)),
         "date": body.get("date") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

@@ -292,16 +292,15 @@ async function saveToHistory(data, fileName, extra = {}) {
 
     // ── שמירה לשרת (היסטוריה משותפת) ──
     const token = ($('token') && $('token').value.trim()) || '';
-    if (token) {
-        try {
-            // send entry JSON as request body
-            await apiFetch('/api/reports/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...entry, hf_token_hint: token }),
-            });
-        } catch (e) { /* silent — still save locally */ }
-    }
+    try {
+        const payload = { ...entry };
+        if (token) payload.hf_token_hint = token;
+        await apiFetch('/api/reports/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (e) { /* silent — still save locally */ }
 
     // ── שמירה מבוזרת ל-Relay (כמו SOS) ──
     try {

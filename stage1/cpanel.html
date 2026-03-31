@@ -160,6 +160,11 @@ tr.detail-row td{padding:0;border-top:none}
       <input type="checkbox" id="rememberCreds" checked>
       <span>זכור שם משתמש וסיסמה במחשב זה</span>
     </label>
+    <div class="field" id="apiBaseField" style="display:none">
+      <label>כתובת שרת API</label>
+      <input type="text" id="cpApiBase" placeholder="https://your-server.example.com" dir="ltr" style="font-size:.82rem">
+      <small style="color:#64748b;font-size:.7rem">נדרש כשגולשים מ-GitHub Pages</small>
+    </div>
     <button class="btn-login" id="btnLogin">כניסה</button>
     <div class="err-msg" id="loginErr"></div>
   </div>
@@ -414,6 +419,14 @@ function updateRelayStorageStats(){
 document.getElementById('btnLogin').addEventListener('click', doLogin);
 document.getElementById('cpPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
+// Show API base field on GitHub Pages
+if(isGithubPagesHost()){
+  const abf = document.getElementById('apiBaseField');
+  if(abf) abf.style.display = 'block';
+  const abInput = document.getElementById('cpApiBase');
+  if(abInput) abInput.value = getApiBase() || '';
+}
+
 loadSavedCredentials();
 
 async function doLogin(){
@@ -423,9 +436,14 @@ async function doLogin(){
   const err = document.getElementById('loginErr');
   err.textContent = '';
   if(!u||!p){ err.textContent='נא למלא את כל השדות'; return; }
+  // Save API base from input if on GitHub Pages
+  if(isGithubPagesHost()){
+    const abVal = normalizeApiBase((document.getElementById('cpApiBase')||{}).value||'');
+    if(abVal) localStorage.setItem(API_BASE_KEY, abVal);
+  }
   document.getElementById('btnLogin').disabled = true;
   if(isGithubPagesHost() && !getApiBase()){
-    err.textContent = apiHelp();
+    err.textContent = 'נא להזין כתובת שרת API';
     document.getElementById('btnLogin').disabled = false;
     return;
   }
